@@ -28,7 +28,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 
 type User = {
-  id: string;
+  id: number;
   name: string;
   email: string;
   avatarUrl?: string;
@@ -37,18 +37,17 @@ type User = {
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [newUser, setNewUser] = useState({ name: "", email: "" });
+  const [newUser, setNewUser] = useState({ name: "", email: "", password: "" });
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
-  const handleRemove = (id: string) => {
+  // funcao pra remover usarios
+  const handleRemove = (id: number) => {
     startTransition(async () => {
       try {
         await deleteUser(id);
         setUsers((prev) => prev.filter((user) => user.id !== id));
-        toast({
-          description: "Usuário removido com sucesso!",
-        });
+        toast({ description: "Usuário removido com sucesso!" });
       } catch (err) {
         console.error("Erro ao remover usuário:", err);
         toast({
@@ -59,6 +58,8 @@ export default function UsersPage() {
     });
   };
 
+
+  // funcao pra retornar todos os usarios cadastrados
   useEffect(() => {
     const fetchUsers = async () => {
       const fetched = await getAllUsers();
@@ -67,15 +68,20 @@ export default function UsersPage() {
     fetchUsers();
   }, []);
 
+
+  // funcao pra adicionar novos usarios
   const handleAddUser = async () => {
     try {
       await createAccount({
         fullName: newUser.name,
         email: newUser.email,
+        password: newUser.password,
       });
+
+      // atualizando novos usarios
       const refreshedUsers = await getAllUsers();
       setUsers(refreshedUsers);
-      setNewUser({ name: "", email: "" });
+      setNewUser({ name: "", email: "", password: "" });
       setDialogOpen(false);
       toast({ description: "Usuário criado com sucesso!" });
     } catch (err) {
@@ -103,9 +109,7 @@ export default function UsersPage() {
               </DialogTrigger>
               <DialogContent className="rounded-xl sm:max-w-[425px]">
                 <DialogHeader>
-                  <DialogTitle className="text-xl">
-                    Adicionar novo usuário
-                  </DialogTitle>
+                  <DialogTitle className="text-xl">Adicionar novo usuário</DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
@@ -133,6 +137,21 @@ export default function UsersPage() {
                         setNewUser((prev) => ({
                           ...prev,
                           email: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="password">Senha</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Senha temporária"
+                      value={newUser.password}
+                      onChange={(e) =>
+                        setNewUser((prev) => ({
+                          ...prev,
+                          password: e.target.value,
                         }))
                       }
                     />

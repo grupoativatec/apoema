@@ -1,4 +1,3 @@
-/* eslint-disable tailwindcss/migration-from-tailwind-2 */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -13,28 +12,31 @@ export default function ProfilePage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [avatar, setAvatar] = useState("");
-  const [userId, setUserId] = useState("");
+  const [userId, setUserId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
   const { toast } = useToast();
   const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
 
+  // Mostrando o usario atual
   useEffect(() => {
     const fetchUser = async () => {
       const user = await getCurrentUser();
       if (user) {
-        setName(user.fullName);
+        setName(user.nome);
         setEmail(user.email);
         setAvatar(user.avatar);
-        setUserId(user.$id);
+        setUserId(user.id);
       }
-      setIsLoading(false); // Finaliza o carregamento
+      setIsLoading(false);
     };
 
     fetchUser();
   }, []);
 
+
+  // Mudando o avatar do usario atual
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -44,21 +46,13 @@ export default function ProfilePage() {
     }
   };
 
+
+  // Salvando as alterações feitas do usario atual
   const handleSave = async () => {
-    setIsSaving(true); // Inicia o processo de salvamento
+    if (!userId) return;
+    setIsSaving(true);
 
     let avatarUrl = avatar;
-
-    if (newAvatarFile) {
-      const fileData = await uploadFile({
-        file: newAvatarFile,
-        ownerId: userId,
-        accountId: userId,
-        path: "/profile",
-      });
-
-      avatarUrl = fileData.url;
-    }
 
     await updateUser({
       userId,
@@ -68,7 +62,6 @@ export default function ProfilePage() {
     });
 
     setAvatar(avatarUrl);
-
     setIsSaving(false);
 
     toast({
@@ -88,9 +81,7 @@ export default function ProfilePage() {
               <Skeleton className="size-40 rounded-full" />
             ) : (
               <Image
-                src={
-                  avatar && avatar !== "" ? avatar : "/assets/images/avatar.png"
-                }
+                src={avatar || "/assets/images/avatar.png"}
                 alt="Avatar"
                 fill
                 className="rounded-full object-cover"
@@ -104,12 +95,13 @@ export default function ProfilePage() {
                   accept="image/*"
                   onChange={handleAvatarChange}
                   className="hidden"
+                  disabled
+                  // lembrar de adicionar funcao pra mudar foto
                 />
               </label>
             )}
           </div>
 
-          {/* Form */}
           <div className="flex w-full flex-col gap-6">
             <div className="relative">
               {isLoading ? (

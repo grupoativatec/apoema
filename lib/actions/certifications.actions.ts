@@ -1,210 +1,127 @@
-/* eslint-disable no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use server";
 
-import { createAdminClient } from "@/lib/appwrite";
-import { appwriteConfig } from "@/lib/appwrite/config";
-import { ID, Query } from "node-appwrite";
+import { pool } from "../database/db";
 
 // Cria um novo certificado
 export const createCertification = async (data: {
   referencia: string;
   nomeComercial: string;
-  validade: string;
-  manutencaoData: string;
+  validade: Date;
+  manutencaoData: Date;
   manutencaoEmAndamento: boolean;
   certificado: string;
 }) => {
-  try {
-    const { databases } = await createAdminClient();
+  const query = `
+    INSERT INTO certificacoes
+    (referencia, nomeComercial, validade, manutencaoData, manutencaoEmAndamento, certificado)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `;
 
-    const result = await databases.createDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.certificationsCollectionId,
-      ID.unique(),
-      data
-    );
+  const values = [
+    data.referencia,
+    data.nomeComercial,
+    data.validade,
+    data.manutencaoData,
+    data.manutencaoEmAndamento,
+    data.certificado,
+  ];
 
-    return result;
-  } catch (error) {
-    console.error("Erro ao criar Certificado", error);
-    throw error;
-  }
+  await pool.execute(query, values);
 };
 
-// Atualiza um Certificado existente
+
+
+// Atualiza um certificado existente
 export const updateCertification = async (
   id: string,
   data: {
     referencia: string;
     nomeComercial: string;
-    validade: string;
-    manutencaoData: string;
+    validade: Date;
+    manutencaoData: Date;
     manutencaoEmAndamento: boolean;
     certificado: string;
   }
 ) => {
-  try {
-    const { databases } = await createAdminClient();
-
-    const result = await databases.updateDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.certificationsCollectionId,
-      id,
-      data
-    );
-
-    return result;
-  } catch (error) {
-    console.error("Erro ao atualizar Certificado", error);
-    throw error;
-  }
+  const query = `
+    UPDATE certificacoes
+    SET referencia = ?, nomeComercial = ?, validade = ?, manutencaoData = ?, manutencaoEmAndamento = ?, certificado = ?
+    WHERE id = ?
+  `;
+  const values = [
+    data.referencia,
+    data.nomeComercial,
+    data.validade,
+    data.manutencaoData,
+    data.manutencaoEmAndamento,
+    data.certificado,
+    id,
+  ];
+  await pool.execute(query, values);
 };
 
-// Retorna a lista de todos os Certificados
-export const getCertifications = async () => {
-  try {
-    const { databases } = await createAdminClient();
-
-    const result = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.certificationsCollectionId,
-      [Query.limit(7000)]
-    );
-
-    return result.documents;
-  } catch (error) {
-    console.error("Erro ao listar Certificados", error);
-    throw error;
-  }
+// Lista todos os certificados
+export const getCertifications = async (): Promise<any[]> => {
+  const [rows]: [any[], any] = await pool.query("SELECT * FROM certificacoes LIMIT 7000");
+  return rows;
 };
 
-// Exclui um Certificado com base no ID
+
+// Deleta um certificado
 export const deleteCertification = async (id: string) => {
-  try {
-    const { databases } = await createAdminClient();
-
-    const result = await databases.deleteDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.certificationsCollectionId,
-      id
-    );
-
-    return result;
-  } catch (error) {
-    console.error("Erro ao excluir Certificado", error);
-    throw error;
-  }
+  await pool.execute("DELETE FROM certificacoes WHERE id = ?", [id]);
 };
 
-// Retorna os Certificados com validade igual ao dia atual ou mais próxima
+// Retorna os certificados com validade igual a hoje ou mais próxima
 export const getCertificationsValidToday = async () => {
-  try {
-    const { databases } = await createAdminClient();
+  const [rows] = await pool.query<any[]>("SELECT * FROM certificacoes");
 
-    const formatarData = (data: Date) => {
-      return `${data.getDate().toString().padStart(2, "0")}/${(
-        data.getMonth() + 1
-      )
-        .toString()
-        .padStart(2, "0")}/${data.getFullYear()}`;
-    };
+  const hoje = new Date();
+  const sameDay = (d1: Date, d2: Date) =>
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate();
 
-    const hoje = new Date();
-    const dataDeHoje = formatarData(hoje);
+  const comValidadeHoje = rows.filter((row: any) => {
+    const validade = new Date(row.validade);
+    return sameDay(validade, hoje);
+  });
 
-    const result = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.certificationsCollectionId,
-      [Query.equal("validade", dataDeHoje), Query.limit(10)]
+  if (comValidadeHoje.length > 0) return comValidadeHoje;
+
+  const ordenados = rows
+    .filter((row: any) => row.validade)
+    .map((row: any) => ({
+      ...row,
+      validadeDate: new Date(row.validade),
+    }))
+    .sort(
+      (a: any, b: any) =>
+        Math.abs(a.validadeDate.getTime() - hoje.getTime()) -
+        Math.abs(b.validadeDate.getTime() - hoje.getTime())
     );
 
-    if (result.total > 0) {
-      return result.documents.map((doc) => ({
-        referencia: doc.referencia,
-        nomeComercial: doc.nomeComercial,
-        validade: doc.validade,
-        manutencaoEmAndamento: doc.manutencaoEmAndamento,
-        certificado: doc.certificado,
-      }));
-    }
+  if (ordenados.length === 0) return [];
 
-    const todos = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.certificationsCollectionId,
-      [Query.limit(1000)]
-    );
+  const dataMaisProxima = ordenados[0].validadeDate;
+  const proximos = ordenados.filter((row: any) =>
+    sameDay(new Date(row.validade), dataMaisProxima)
+  );
 
-    const documentosOrdenados = todos.documents
-      .filter((doc) => !!doc.validade)
-      .map((doc) => {
-        const cert = doc as unknown as {
-          validade: string;
-          referencia: string;
-          nomeComercial: string;
-          manutencaoEmAndamento: boolean;
-          certificado: string;
-        };
-        return {
-          ...cert,
-          dataParsed: new Date(cert.validade.split("/").reverse().join("-")),
-        };
-      })
-      .sort(
-        (a, b) =>
-          Math.abs(a.dataParsed.getTime() - hoje.getTime()) -
-          Math.abs(b.dataParsed.getTime() - hoje.getTime())
-      );
-
-    if (documentosOrdenados.length === 0) return [];
-
-    const dataMaisProxima = formatarData(documentosOrdenados[0].dataParsed);
-
-    const proximos = documentosOrdenados.filter(
-      (doc) => formatarData(doc.dataParsed) === dataMaisProxima
-    );
-
-    return proximos.map((doc) => ({
-      referencia: doc.referencia,
-      nomeComercial: doc.nomeComercial,
-      validade: doc.validade,
-      manutencaoEmAndamento: doc.manutencaoEmAndamento,
-      certificado: doc.certificado,
-    }));
-  } catch (error) {
-    console.error(
-      "Erro ao buscar Certificados com validade mais próxima de hoje:",
-      error
-    );
-    throw error;
-  }
+  return proximos;
 };
 
-// Retorna a quantidade de Certificados criados no mês atual
+// Quantidade de certificados criados no mês atual (baseado em validade)
 export const getCertificationsCreatedThisMonth = async () => {
-  try {
-    const { databases } = await createAdminClient();
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = hoje.getMonth() + 1;
 
-    const hoje = new Date();
-    const anoAtual = hoje.getFullYear();
-    const mesAtual = hoje.getMonth() + 1;
+  const query = `
+    SELECT COUNT(*) as total FROM certificacoes
+    WHERE YEAR(validade) = ? AND MONTH(validade) = ?
+  `;
 
-    const result = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.certificationsCollectionId,
-      [Query.limit(7000)]
-    );
-
-    const certificationsNoMes = result.documents.filter((doc) => {
-      const validade = doc.validade;
-      const [dia, mes, ano] = validade.split("/").map(Number);
-
-      return ano === anoAtual && mes === mesAtual;
-    });
-
-    return certificationsNoMes.length;
-  } catch (error) {
-    console.error("Erro ao buscar Certificados criados no mês:", error);
-    throw error;
-  }
+  const [rows]: any = await pool.execute(query, [ano, mes]);
+  return rows[0].total;
 };

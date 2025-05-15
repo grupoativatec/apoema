@@ -6,6 +6,9 @@ import { Query, ID } from "node-appwrite";
 import { parseStringify } from "@/lib/utils";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { pool } from "../database/db";
+import bcrypt from "bcryptjs";
+
 
 // Função que busca um usuário pelo e-mail na base de dados do Appwrite
 const getUserByEmail = async (email: string) => {
@@ -46,38 +49,47 @@ export const sendEmailOTP = async ({ email }: { email: string }) => {
 export const createAccount = async ({
   fullName,
   email,
+  password,
 }: {
   fullName: string;
   email: string;
+  password: string;
 }) => {
-  // Verifica se já existe um usuário com o e-mail fornecido
-  const existingUser = await getUserByEmail(email);
+  try {
+    // Verifica se já existe um usuário com esse e-mail
+    const [existing]: any = await pool.query("SELECT id FROM usuarios WHERE email = ?", [email]);
 
-  // Envia um OTP e obtém um ID de conta associado
-  const accountId = await sendEmailOTP({ email });
-  if (!accountId) throw new Error("Failed to send an OTP");
+    if (existing.length > 0) {
+      return { success: false, message: "E-mail já está em uso" };
+    }
 
-  // Se o usuário ainda não existir, cria um novo registro na base de dados
-  if (!existingUser) {
-    const { databases } = await createAdminClient();
+    // Cria hash da senha
+    const senhaHash = await bcrypt.hash(password, 10);
 
-    await databases.createDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.userCollectionId,
-      ID.unique(),
-      {
-        fullName,
-        email,
-        avatar:
-          "https://hwchamber.co.uk/wp-content/uploads/2022/04/avatar-placeholder.gif",
-        accountId,
-      }
+    // Define avatar padrão
+    const avatar = "https://hwchamber.co.uk/wp-content/uploads/2022/04/avatar-placeholder.gif";
+
+    // Insere no banco
+    const [result]: any = await pool.query(
+      "INSERT INTO usuarios (nome, email, senha_hash, avatar) VALUES (?, ?, ?, ?)",
+      [fullName, email, senhaHash, avatar]
     );
-  }
 
-  // Retorna os dados da conta em formato JSON serializado
-  return parseStringify({ accountId });
+    return {
+      success: true,
+      user: {
+        id: result.insertId,
+        nome: fullName,
+        email,
+        avatar,
+      },
+    };
+  } catch (error) {
+    console.error("Erro ao criar conta:", error);
+    return { success: false, message: "Erro interno ao criar conta" };
+  }
 };
+
 
 // Verifica as credenciais do usuário e cria uma sessão autenticada
 export const verifySecret = async ({
@@ -115,131 +127,152 @@ export const verifySecret = async ({
 // Obtém os dados do usuário atualmente autenticado
 export const getCurrentUser = async () => {
   try {
-    const { databases, account } = await createSessionClient();
+    const cookieStore = cookies();
+    const userId = (await cookieStore).get("usuario_id")?.value;
 
-    // Obtém os detalhes da conta autenticada
-    const result = await account.get();
+    if (!userId) return null;
 
-    // Busca na base de dados um usuário vinculado ao ID da conta autenticada
-    const user = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.userCollectionId,
-      [Query.equal("accountId", result.$id)]
-    );
+    const [rows]: any = await pool.query("SELECT * FROM usuarios WHERE id = ?", [userId]);
 
-    // Se o usuário não for encontrado, retorna null
-    if (user.total <= 0) return null;
+    if (rows.length === 0) return null;
 
-    return parseStringify(user.documents[0]); // Retorna os dados do usuário
+    const user = rows[0];
+
+    return {
+      id: user.id,
+      nome: user.nome,
+      email: user.email,
+      avatar: user.avatar,
+    };
   } catch (error) {
-    console.log(error);
+    console.error("Erro ao buscar usuário autenticado:", error);
+    return null;
   }
 };
 
 // Realiza o logout do usuário, removendo a sessão e o cookie correspondente
 export const signOutUser = async () => {
-  const { account } = await createSessionClient();
-
   try {
-    await account.deleteSession("current"); // Deleta a sessão atual
-    (await cookies()).delete("appwrite-session"); // Remove o cookie de autenticação
+    (await cookies()).delete("usuario_id");
   } catch (error) {
-    handleError(error, "Failed to sign out user");
+    console.error("Erro ao sair:", error);
   } finally {
-    redirect("/sign-in"); // Redireciona para a página de login após o logout
+    redirect("/sign-in"); // Redireciona para a página de login
   }
 };
 
 // Realiza o login do usuário com autenticação via OTP
-export const signInUser = async ({ email }: { email: string }) => {
+export const signInUser = async ({
+  email,
+  password,
+}: {
+  email: string;
+  password: string;
+}) => {
   try {
-    // Verifica se o usuário já existe no banco de dados
-    const existingUser = await getUserByEmail(email);
+    const [rows]: any = await pool.query("SELECT * FROM usuarios WHERE email = ?", [email]);
 
-    // Se o usuário não for encontrado, retorna um erro informando que o usuário não existe
-    if (!existingUser) {
-      return parseStringify({ accountId: null, error: "User not found" });
+    if (rows.length === 0) {
+      return { success: false, message: "Usuário não encontrado" };
     }
 
-    // Se o usuário existir, envia o OTP e retorna o accountId
-    await sendEmailOTP({ email });
+    const usuario = rows[0];
+    const isMatch = await bcrypt.compare(password, usuario.senha_hash);
 
-    return parseStringify({ accountId: existingUser.accountId });
+    if (!isMatch) {
+      return { success: false, message: "Senha incorreta" };
+    }
+
+    // Cria um cookie com o ID do usuário
+    (await
+      
+      cookies()).set("usuario_id", String(usuario.id), {
+      path: "/",
+      httpOnly: true,
+      sameSite: "strict",
+      secure: true,
+      maxAge: 60 * 60 * 24 * 30, // 30 dias
+    });
+
+    return {
+      success: true,
+      user: {
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        avatar: usuario.avatar,
+      },
+    };
   } catch (error) {
-    handleError(error, "Failed to sign in user");
+    console.error("Erro no login:", error);
+    return { success: false, message: "Erro no servidor" };
   }
 };
 
-export const deleteUser = async (userId: string) => {
+// Deletando usarios
+export const deleteUser = async (userId: number) => {
   try {
-    const { databases } = await createAdminClient();
-
-    await databases.deleteDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.userCollectionId,
-      userId
-    );
-
+    await pool.query("DELETE FROM usuarios WHERE id = ?", [userId]);
     return { success: true };
   } catch (error) {
-    handleError(error, "Erro ao deletar usuário");
+    console.error("Erro ao deletar usuário:", error);
+    return { success: false, message: "Erro ao deletar usuário" };
   }
 };
 
+
+// Retornando todos os usarios
 export const getAllUsers = async () => {
-  const { databases } = await createAdminClient();
+  try {
+    const [rows]: any = await pool.query("SELECT id, nome, email, avatar FROM usuarios");
 
-  const result = await databases.listDocuments(
-    appwriteConfig.databaseId,
-    appwriteConfig.userCollectionId
-  );
-
-  return result.documents.map((doc) => ({
-    id: doc.$id,
-    name: doc.fullName,
-    email: doc.email,
-    avatarUrl: doc.avatar,
-  }));
+    return rows.map((row: any) => ({
+      id: row.id,
+      name: row.nome,
+      email: row.email,
+      avatarUrl: row.avatar,
+    }));
+  } catch (error) {
+    console.error("Erro ao buscar usuários:", error);
+    return [];
+  }
 };
 
+
+// atualizando usuarios
 export const updateUser = async ({
   userId,
   fullName,
   email,
   avatar,
 }: {
-  userId: string;
+  userId: number;
   fullName: string;
   email: string;
   avatar: string;
 }) => {
   try {
-    const { databases } = await createAdminClient();
-
-    await databases.updateDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.userCollectionId,
-      userId,
-      {
-        fullName,
-        email,
-        avatar,
-      }
+    await pool.query(
+      "UPDATE usuarios SET nome = ?, email = ?, avatar = ? WHERE id = ?",
+      [fullName, email, avatar, userId]
     );
 
     return { success: true };
   } catch (error) {
-    handleError(error, "Erro ao atualizar usuário");
+    console.error("Erro ao atualizar usuário:", error);
+    return { success: false, message: "Erro ao atualizar usuário" };
   }
 };
 
 // Obtém o ID da conta do usuário autenticado
 export const getAccountId = async () => {
   try {
-    const { account } = await createSessionClient();
-    const session = await account.get();
+    const cookieStore = cookies();
+    const userId = (await cookieStore).get("usuario_id")?.value;
 
-    return session.$id;
+    if (!userId) return null;
+
+    return parseInt(userId); 
   } catch (error) {
     console.error("Failed to get accountId", error);
     return null;

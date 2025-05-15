@@ -14,14 +14,13 @@ const layout = async ({ children }: { children: React.ReactNode }) => {
   return (
     <main className="h-screen bg-light-400 bg-center dark:bg-zinc-900">
       <Sidebar
-        {...currentUser}
-        userId={currentUser.$id}
-        accountId={currentUser.accountId}
-      />
+      name={currentUser.nome} {...currentUser}
+      userId={currentUser.id}
+      accountId={currentUser.nome}      />
       <section className="flex h-full flex-col md:pl-52">
-        <Header userId={currentUser.$id} accountId={currentUser.accountId} />
-        <MobileNavigation {...currentUser} />
-        <div className="main-content-remove-padding p-6">
+        <Header userId={currentUser.id} accountId={currentUser.nome} />
+        <MobileNavigation fullName={""} {...currentUser} />
+        <div className="main-content p-6">
           {children}
           <Toaster />
         </div>

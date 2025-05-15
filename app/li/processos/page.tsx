@@ -192,7 +192,7 @@ const Page = () => {
 
     const loop = async () => {
       await fetchAndSync();
-      if (!canceled) setTimeout(loop, 300_000); // 5 minutos
+      if (!canceled) setTimeout(loop, 300_000);
     };
 
     loop();

@@ -1,8 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-"use client";
-import * as XLSX from "xlsx";
+'use client'
 
+import * as XLSX from "xlsx";
 import React, { useState, useEffect } from "react";
 import {
   Table,
@@ -29,7 +27,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { FaTrash, FaEdit } from "react-icons/fa";
-
 import {
   getCertifications,
   updateCertification,
@@ -38,10 +35,15 @@ import {
 } from "@/lib/actions/certifications.actions";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Função auxiliar para formatar datas como string
+// ✅ Função de validação de datas
+const isValidDate = (value: string) => {
+  const d = new Date(value);
+  return !isNaN(d.getTime());
+};
+
+// ✅ Formatação de data para exibição
 const formatDateAsString = (date: any): string => {
   if (!date) return "";
-  if (typeof date === "string") return date;
   const d = new Date(date);
   const day = d.getDate().toString().padStart(2, "0");
   const month = (d.getMonth() + 1).toString().padStart(2, "0");
@@ -54,6 +56,8 @@ const Page = () => {
   const [editingCertification, setEditingCertification] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const [newCertification, setNewCertification] = useState({
@@ -64,10 +68,7 @@ const Page = () => {
     manutencaoEmAndamento: false,
     certificado: "",
   });
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>(null);
 
-  // Fetch de certificados ao carregar o componente
   useEffect(() => {
     const fetchCertifications = async () => {
       setIsLoading(true);
@@ -83,121 +84,111 @@ const Page = () => {
     fetchCertifications();
   }, []);
 
-  // Ordenação por DATA MANUTENÇÃO
   const handleSortByMaintenanceDate = () => {
     const newOrder = sortOrder === "asc" ? "desc" : "asc";
     setSortOrder(newOrder);
 
-    const sortedCertifications = [...certifications].sort((a, b) => {
-      const parseDate = (dateString: string): number => {
-        if (!dateString) return 0;
-        const [day, month, year] = dateString.split("/").map(Number);
-        return new Date(year, month - 1, day).getTime();
-      };
-
-      const dateA = parseDate(a.manutencaoData);
-      const dateB = parseDate(b.manutencaoData);
-
-      if (dateA === 0 && dateB === 0) return 0;
-      if (dateA === 0) return newOrder === "asc" ? 1 : -1;
-      if (dateB === 0) return newOrder === "asc" ? -1 : 1;
-
+    const sorted = [...certifications].sort((a, b) => {
+      const dateA = new Date(a.manutencaoData).getTime();
+      const dateB = new Date(b.manutencaoData).getTime();
       return newOrder === "asc" ? dateA - dateB : dateB - dateA;
     });
 
-    setCertifications(sortedCertifications);
+    setCertifications(sorted);
   };
 
-  // Atualizar diretamente o valor de manutenção em andamento
-  const handleUpdateMaintenanceStatus = async (
-    id: string,
-    newValue: boolean
-  ) => {
+  const handleUpdateMaintenanceStatus = async (id: string, newValue: boolean) => {
     try {
-      const currentCertification = certifications.find(
-        (cert) => cert.$id === id
-      );
+      const cert = certifications.find((c) => c.id === id);
+      if (!cert) return;
 
-      if (!currentCertification) {
-        console.error("Certificação não encontrada");
-        return;
-      }
-
-      const updatedPayload = {
-        ...currentCertification,
+      const updated = {
+        ...cert,
+        manutencaoEmAndamento: newValue,
       };
 
-      const updatedCertification = await updateCertification(
-        id,
-        updatedPayload
-      );
-
+      await updateCertification(id, updated);
       setCertifications((prev) =>
-        prev.map((cert) => (cert.$id === id ? updatedCertification : cert))
+        prev.map((c) => (c.id === id ? updated : c))
       );
     } catch (error) {
-      console.error("Erro ao atualizar manutenção em andamento:", error);
+      console.error("Erro ao atualizar manutenção:", error);
     }
   };
 
-  // Handler para salvar alterações em um certificado existente
   const handleSaveEditCertification = async () => {
     if (editingCertification) {
       try {
-        const sanitizedData = {
+        const validadeOk = isValidDate(editingCertification.validade);
+        const manutencaoOk = isValidDate(editingCertification.manutencaoData);
+
+        if (!validadeOk || !manutencaoOk) {
+          alert("Data inválida em edição");
+          return;
+        }
+
+        const payload = {
           referencia: editingCertification.referencia.trim(),
           nomeComercial: editingCertification.nomeComercial.trim(),
-          validade: formatDateAsString(editingCertification.validade),
-          manutencaoData: formatDateAsString(
-            editingCertification.manutencaoData
-          ),
+          validade: new Date(editingCertification.validade),
+          manutencaoData: new Date(editingCertification.manutencaoData),
           manutencaoEmAndamento: editingCertification.manutencaoEmAndamento,
           certificado: editingCertification.certificado.trim(),
         };
 
-        const updatedCertification = await updateCertification(
-          editingCertification.$id,
-          sanitizedData
-        );
+        console.log("Edit Payload:", payload); // ⚠️ Depuração
+
+        await updateCertification(editingCertification.id, payload);
 
         setCertifications((prev) =>
-          prev.map((cert) =>
-            cert.$id === editingCertification.$id ? updatedCertification : cert
+          prev.map((c) =>
+            c.id === editingCertification.id
+              ? { ...payload, id: editingCertification.id }
+              : c
           )
         );
 
         setEditingCertification(null);
         setIsEditDialogOpen(false);
       } catch (error) {
-        console.error("Erro ao atualizar certificado:", error);
+        console.error("Erro ao salvar edição:", error);
       }
     }
   };
 
-  // Handler para excluir um certificado
   const handleDeleteCertification = async (id: string) => {
     try {
       await deleteCertification(id);
-      setCertifications((prev) => prev.filter((cert) => cert.$id !== id));
+      setCertifications((prev) => prev.filter((c) => c.id !== id));
     } catch (error) {
-      console.error("Erro ao excluir certificado:", error);
+      console.error("Erro ao excluir:", error);
     }
   };
 
   const handleAddCertification = async () => {
     try {
-      const sanitizedData = {
+      const validadeOk = isValidDate(newCertification.validade);
+      const manutencaoOk = isValidDate(newCertification.manutencaoData);
+
+      if (!validadeOk || !manutencaoOk) {
+        alert("Data inválida no cadastro");
+        return;
+      }
+
+      const payload = {
+        id: crypto.randomUUID(),
         referencia: newCertification.referencia.trim(),
         nomeComercial: newCertification.nomeComercial.trim(),
-        validade: formatDateAsString(newCertification.validade),
-        manutencaoData: formatDateAsString(newCertification.manutencaoData),
+        validade: new Date(newCertification.validade),
+        manutencaoData: new Date(newCertification.manutencaoData),
         manutencaoEmAndamento: newCertification.manutencaoEmAndamento,
         certificado: newCertification.certificado.trim(),
       };
 
-      const result = await createCertification(sanitizedData);
+      console.log("Add Payload:", payload); // ⚠️ Depuração
 
-      setCertifications((prev) => [...prev, result]);
+      await createCertification(payload);
+      setCertifications((prev) => [...prev, payload]);
 
       setNewCertification({
         referencia: "",
@@ -209,53 +200,31 @@ const Page = () => {
       });
       setIsAddDialogOpen(false);
     } catch (error) {
-      console.error("Erro ao criar certificado:", error);
+      console.error("Erro ao adicionar:", error);
     }
   };
 
-  // Função para exportar os dados para Excel
   const handleExportToExcel = () => {
-    const filteredData = certifications.map(
-      ({
-        referencia,
-        nomeComercial,
-        certificado,
-        validade,
-        manutencaoData,
-        manutencaoEmAndamento,
-      }) => ({
-        Referencia: referencia,
-        "Nome Comercial": nomeComercial,
-        Certificado: certificado,
-        Validade: validade,
-        "Data de Manutenção": manutencaoData,
-        "Manutenção em Andamento": manutencaoEmAndamento ? "Sim" : "Não",
-      })
-    );
+    const data = certifications.map((c) => ({
+      Referencia: c.referencia,
+      "Nome Comercial": c.nomeComercial,
+      Certificado: c.certificado,
+      Validade: formatDateAsString(c.validade),
+      "Data de Manutenção": formatDateAsString(c.manutencaoData),
+      "Manutenção em Andamento": c.manutencaoEmAndamento ? "Sim" : "Não",
+    }));
 
-    const worksheet = XLSX.utils.json_to_sheet(filteredData, {
-      header: [
-        "Referencia",
-        "Nome Comercial",
-        "Certificado",
-        "Validade",
-        "Data de Manutenção",
-        "Manutenção em Andamento",
-      ],
-    });
-
+    const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Certificações");
-
     XLSX.writeFile(workbook, "certificacoes.xlsx");
   };
 
-  // Filtro de busca
-  const filteredCertifications = certifications.filter(
-    (cert) =>
-      cert.referencia.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cert.nomeComercial.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cert.certificado.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredCertifications = certifications.filter((c) =>
+    [c.referencia, c.nomeComercial, c.certificado]
+      .join(" ")
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -265,10 +234,9 @@ const Page = () => {
           <h1 className="mb-2 text-3xl font-bold tracking-tight">
             Controle de Certificações
           </h1>
-
           <Input
             placeholder="Buscar por referência, nome ou certificado"
-            className="mb-5 mt-4 w-full rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary dark:border-white/30 dark:bg-zinc-900 md:w-96"
+            className="mb-5 mt-4 w-full md:w-96"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             disabled={isLoading}
@@ -278,57 +246,47 @@ const Page = () => {
           Adicionar Certificado
         </Button>
       </div>
+
       <Button onClick={handleExportToExcel} disabled={isLoading}>
         Exportar para Excel
       </Button>
 
       <div className="max-h-[550px] overflow-auto rounded-2xl border">
         {isLoading ? (
-          <div>
-            {Array.from({ length: 5 }).map((_, index) => (
-              <div key={index} className="flex gap-4 p-4">
-                <Skeleton className="h-8 w-1/6" />
-                <Skeleton className="h-8 w-1/4" />
-                <Skeleton className="h-8 w-1/4" />
-                <Skeleton className="h-8 w-1/6" />
-                <Skeleton className="h-8 w-1/6" />
-              </div>
-            ))}
-          </div>
+          <Skeleton className="h-8 w-full" />
         ) : (
           <Table>
-            <TableHeader className="sticky top-0 z-10 bg-white shadow-md dark:bg-zinc-900">
+            <TableHeader className="sticky top-0 bg-white dark:bg-zinc-900">
               <TableRow>
                 <TableHead>REF. APOEMA</TableHead>
                 <TableHead>NOME COMERCIAL</TableHead>
                 <TableHead>CERTIFICADO</TableHead>
-                <TableHead>VALIDADE DATA</TableHead>
+                <TableHead>VALIDADE</TableHead>
                 <TableHead
-                  onClick={handleSortByMaintenanceDate}
                   className="cursor-pointer"
+                  onClick={handleSortByMaintenanceDate}
                 >
-                  DATA MANUTENÇÃO{" "}
-                  {sortOrder === "asc" ? "↑" : sortOrder === "desc" ? "↓" : ""}
+                  DATA MANUTENÇÃO {sortOrder === "asc" ? "↑" : "↓"}
                 </TableHead>
-                <TableHead>MANUTENÇÃO EM ANDAMENTO</TableHead>
-                <TableHead>Ações</TableHead>
+                <TableHead>EM ANDAMENTO</TableHead>
+                <TableHead>AÇÕES</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredCertifications.map((cert) => (
-                <TableRow key={cert.$id}>
+                <TableRow key={cert.id}>
                   <TableCell>{cert.referencia}</TableCell>
-                  <TableCell className="w-[250px]">
-                    {cert.nomeComercial}
-                  </TableCell>
+                  <TableCell>{cert.nomeComercial}</TableCell>
                   <TableCell>{cert.certificado}</TableCell>
-                  <TableCell>{cert.validade}</TableCell>
-                  <TableCell>{cert.manutencaoData}</TableCell>
+                  <TableCell>{formatDateAsString(cert.validade)}</TableCell>
+                  <TableCell>
+                    {formatDateAsString(cert.manutencaoData)}
+                  </TableCell>
                   <TableCell>
                     <Select
                       value={cert.manutencaoEmAndamento ? "sim" : "nao"}
-                      onValueChange={(value) =>
-                        handleUpdateMaintenanceStatus(cert.$id, value === "sim")
+                      onValueChange={(val) =>
+                        handleUpdateMaintenanceStatus(cert.id, val === "sim")
                       }
                     >
                       <SelectTrigger className="w-[120px]">
@@ -346,14 +304,10 @@ const Page = () => {
                         setEditingCertification(cert);
                         setIsEditDialogOpen(true);
                       }}
-                      className="w-[40px] dark:bg-zinc-800 dark:text-white"
                     >
                       <FaEdit />
                     </Button>
-                    <Button
-                      onClick={() => handleDeleteCertification(cert.$id)}
-                      className="w-[40px] dark:bg-zinc-800 dark:text-white"
-                    >
+                    <Button onClick={() => handleDeleteCertification(cert.id)}>
                       <FaTrash />
                     </Button>
                   </TableCell>
@@ -364,17 +318,17 @@ const Page = () => {
         )}
       </div>
 
-      {/* Modal de edição */}
+      {/* Dialog de Edição */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar Certificado</DialogTitle>
           </DialogHeader>
           {editingCertification && (
-            <div className="grid grid-cols-1 gap-4 py-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 py-4 md:grid-cols-2 lg:grid-cols-3">
               <Input
-                placeholder="REF. APOEMA"
-                value={editingCertification.referencia || ""}
+                placeholder="REF"
+                value={editingCertification.referencia}
                 onChange={(e) =>
                   setEditingCertification((prev: any) => ({
                     ...prev,
@@ -383,8 +337,8 @@ const Page = () => {
                 }
               />
               <Input
-                placeholder="NOME COMERCIAL"
-                value={editingCertification.nomeComercial || ""}
+                placeholder="Nome Comercial"
+                value={editingCertification.nomeComercial}
                 onChange={(e) =>
                   setEditingCertification((prev: any) => ({
                     ...prev,
@@ -393,8 +347,8 @@ const Page = () => {
                 }
               />
               <Input
-                placeholder="CERTIFICADO"
-                value={editingCertification.certificado || ""}
+                placeholder="Certificado"
+                value={editingCertification.certificado}
                 onChange={(e) =>
                   setEditingCertification((prev: any) => ({
                     ...prev,
@@ -403,8 +357,8 @@ const Page = () => {
                 }
               />
               <Input
-                placeholder="VALIDADE DATA"
-                value={editingCertification.validade || ""}
+                type="date"
+                value={editingCertification.validade?.split("T")[0] || ""}
                 onChange={(e) =>
                   setEditingCertification((prev: any) => ({
                     ...prev,
@@ -413,8 +367,8 @@ const Page = () => {
                 }
               />
               <Input
-                placeholder="MANUTENÇÃO DATA"
-                value={editingCertification.manutencaoData || ""}
+                type="date"
+                value={editingCertification.manutencaoData?.split("T")[0] || ""}
                 onChange={(e) =>
                   setEditingCertification((prev: any) => ({
                     ...prev,
@@ -424,32 +378,21 @@ const Page = () => {
               />
             </div>
           )}
-          <DialogFooter className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto"
-              onClick={() => setIsEditDialogOpen(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              className="w-full sm:w-auto"
-              onClick={handleSaveEditCertification}
-            >
-              Salvar Alterações
-            </Button>
+          <DialogFooter>
+            <Button onClick={handleSaveEditCertification}>Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
+      {/* Dialog de Adição */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Adicionar Novo Certificado</DialogTitle>
+            <DialogTitle>Adicionar Certificado</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-1 gap-4 py-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 py-4 md:grid-cols-2 lg:grid-cols-3">
             <Input
-              placeholder="REF. APOEMA"
+              placeholder="REF"
               value={newCertification.referencia}
               onChange={(e) =>
                 setNewCertification((prev) => ({
@@ -459,7 +402,7 @@ const Page = () => {
               }
             />
             <Input
-              placeholder="NOME COMERCIAL"
+              placeholder="Nome Comercial"
               value={newCertification.nomeComercial}
               onChange={(e) =>
                 setNewCertification((prev) => ({
@@ -469,7 +412,7 @@ const Page = () => {
               }
             />
             <Input
-              placeholder="CERTIFICADO"
+              placeholder="Certificado"
               value={newCertification.certificado}
               onChange={(e) =>
                 setNewCertification((prev) => ({
@@ -479,7 +422,7 @@ const Page = () => {
               }
             />
             <Input
-              placeholder="VALIDADE DATA"
+              type="date"
               value={newCertification.validade}
               onChange={(e) =>
                 setNewCertification((prev) => ({
@@ -489,7 +432,7 @@ const Page = () => {
               }
             />
             <Input
-              placeholder="MANUTENÇÃO DATA"
+              type="date"
               value={newCertification.manutencaoData}
               onChange={(e) =>
                 setNewCertification((prev) => ({
@@ -499,20 +442,8 @@ const Page = () => {
               }
             />
           </div>
-          <DialogFooter className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto"
-              onClick={() => setIsAddDialogOpen(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              className="w-full sm:w-auto"
-              onClick={handleAddCertification}
-            >
-              Salvar
-            </Button>
+          <DialogFooter>
+            <Button onClick={handleAddCertification}>Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

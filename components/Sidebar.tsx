@@ -12,13 +12,13 @@ import { SideNavItem } from "../constants/types";
 import { signOutUser } from "@/lib/actions/user.actions";
 
 interface Props {
-  fullName: string;
+  name: string;
   avatar: string;
   userId: string;
   accountId: string;
 }
 
-const Sidebar = ({ fullName, avatar }: Props) => {
+const Sidebar = ({ name, avatar }: Props) => {
   return (
     <div className="fixed hidden h-screen w-52 border-r border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900 md:flex">
       <div className="flex size-full flex-col">
@@ -54,7 +54,7 @@ const Sidebar = ({ fullName, avatar }: Props) => {
               />
               <div className="flex flex-col">
                 <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                  {fullName.charAt(0).toUpperCase() + fullName.slice(1)}
+                  {name.charAt(0).toUpperCase() + name.slice(1)}
                 </span>
                 <Link
                   href="/settings/profile"
