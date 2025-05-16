@@ -39,11 +39,20 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const formatarDataBrasileira = (data: string) => {
+const formatarDataBrasileira = (data: string | Date): string => {
   if (!data) return "";
-  const partes = data.split("-");
-  if (partes.length !== 3) return data;
-  return `${partes[2]}/${partes[1]}/${partes[0]}`;
+
+  if (data instanceof Date) {
+    return data.toLocaleDateString("pt-BR");
+  }
+
+  if (typeof data === "string") {
+    const partes = data.split("-");
+    if (partes.length !== 3) return data;
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+  }
+
+  return "";
 };
 
 const setCookie = (name: string, value: string, days: number) => {
@@ -80,7 +89,7 @@ const Page = () => {
     dataRegistroLI: "",
     dataInclusaoOrquestra: "",
     previsaoDeferimento: "",
-    situacao: "em análise",
+    situacao: "analise",
     observacoes: "",
   });
 
@@ -117,106 +126,133 @@ const Page = () => {
   }, []);
 
   const handleDuplicate = (index: number) => {
-    const original = data![index];
+  const original = data![index];
 
-    const {
-      $id,
-      $databaseId,
-      $collectionId,
-      $createdAt,
-      $updatedAt,
-      ...cleaned
-    } = original;
+  // Desestruturação para remover o id e outros campos não necessários
+  const {
+    licencaimportacaoid, 
+    $databaseId,
+    $collectionId,
+    $createdAt,
+    $updatedAt,
+    ...cleaned
+  } = original;
 
-    const novoItem = {
-      ...cleaned,
-      dataRegistroLI: formatarDataInternacional(cleaned.dataRegistroLI),
-      dataInclusaoOrquestra: formatarDataInternacional(
-        cleaned.dataInclusaoOrquestra
-      ),
-      previsaoDeferimento: formatarDataInternacional(
-        cleaned.previsaoDeferimento
-      ),
-    };
-
-    createLicencaImportacao(novoItem)
-      .then((res) => {
-        const novo = {
-          ...res,
-          dataRegistroLI: formatarDataBrasileira(res.dataRegistroLI),
-          dataInclusaoOrquestra: formatarDataBrasileira(
-            res.dataInclusaoOrquestra
-          ),
-          previsaoDeferimento: formatarDataBrasileira(res.previsaoDeferimento),
-        };
-
-        setData((prev) => [...(prev || []), novo]);
-      })
-      .catch((err) => {
-        console.error("Erro ao duplicar LI:", err);
-      });
+  // Preparando o novo item, excluindo o id
+  const novoItem = {
+    ...cleaned,
+    dataRegistroLI: formatarDataInternacional(cleaned.dataRegistroLI),
+    dataInclusaoOrquestra: formatarDataInternacional(cleaned.dataInclusaoOrquestra),
+    previsaoDeferimento: formatarDataInternacional(cleaned.previsaoDeferimento),
   };
 
-  const handleChange = async (field: string, value: string, id: string) => {
-    if (!data) return;
+  // Chama a função do backend para criar a nova Licença de Importação
+  createLicencaImportacao(novoItem)
+    .then((res) => {
+      // Formatar as datas para o formato brasileiro
+      const novo = {
+        ...res,
+        dataRegistroLI: formatarDataBrasileira(res.dataRegistroLI),
+        dataInclusaoOrquestra: formatarDataBrasileira(res.dataInclusaoOrquestra),
+        previsaoDeferimento: formatarDataBrasileira(res.previsaoDeferimento),
+      };
 
-    const updatedData = data.map((item) => {
-      if (item.$id === id) {
-        const updatedItem = {
-          ...item,
-          [field]:
-            field === "numeroOrquestra" ? parseInt(value, 10) || 0 : value,
-        };
-
-        // Se o campo alterado for "dataInclusaoOrquestra", calcule a previsão de deferimento
-        if (field === "dataInclusaoOrquestra" && value.length === 10) {
-          const dateParts = value.split("/");
-          if (dateParts.length === 3) {
-            const [day, month, year] = dateParts;
-            const fullYear = year.length === 2 ? `20${year}` : year;
-            const formattedDate = `${fullYear}-${month}-${day}`;
-
-            const previsao = calcularPrevisaoDeferimento(formattedDate);
-            updatedItem.previsaoDeferimento = previsao; // Atualiza a previsão de deferimento
-          }
-        }
-
-        return updatedItem;
-      }
-      return item;
+      // Adicionar o novo item ao estado de dados
+      setData((prev) => [...(prev || []), novo]);
+    })
+    .catch((err) => {
+      console.error("Erro ao duplicar Licença de Importação:", err);
     });
+};
 
-    setData(updatedData); // Atualize o estado com os dados modificados
+  // EDITA A DATA
+  
 
-    try {
-      const targetItem = updatedData.find((item) => item.$id === id);
-      if (!targetItem) return;
+  const handleChange = (field: string, value: string, id: string) => {
+  if (!data) return;
 
-      const {
-        $id,
-        $databaseId,
-        $collectionId,
-        $createdAt,
-        $updatedAt,
-        ...dataToUpdate
-      } = targetItem;
+  const updatedData = data.map((item) => {
+    if (item.licencaimportacaoid === id) {
+      const updatedItem = {
+        ...item,
+        [field]:
+          field === "numeroOrquestra" ? parseInt(value, 10) || 0 : value,
+      };
 
-      if (dataToUpdate.numeroOrquestra) {
-        dataToUpdate.numeroOrquestra = parseInt(
-          dataToUpdate.numeroOrquestra,
-          10
-        );
+      // Se o campo alterado for "dataInclusaoOrquestra", calcule a previsão de deferimento
+      if (field === "dataInclusaoOrquestra" && value.length === 10) {
+        const dateParts = value.split("/");
+        if (dateParts.length === 3) {
+          const [day, month, year] = dateParts;
+          const fullYear = year.length === 2 ? `20${year}` : year;
+          const formattedDate = `${fullYear}-${month}-${day}`;
+          updatedItem.previsaoDeferimento = calcularPrevisaoDeferimento(formattedDate);
+        }
       }
 
-      // Envia a atualização para o backend
-      await updateLicencaImportacao(id, dataToUpdate);
+      return updatedItem;
+    }
+    return item;
+  });
+
+  setData(updatedData);
+};
+
+  
+  //Função para salvar os dados apenas com o ENTER
+  const handleSave = async (id: string) => {
+  const item = data?.find((i) => i.licencaimportacaoid === id);
+  if (!item) return;
+
+
+  try {
+    await updateLicencaImportacao(Number(id), {
+      ...item,
+      numeroOrquestra: parseInt(item.numeroOrquestra, 10) || 0,
+      dataRegistroLI: formatarDataInternacional(item.dataRegistroLI),
+      dataInclusaoOrquestra: formatarDataInternacional(item.dataInclusaoOrquestra),
+      previsaoDeferimento: formatarDataInternacional(item.previsaoDeferimento),
+      situacao: item.situacao, 
+      observacoes: item.observacoes,
+    });
+  } catch (err) {
+    console.error("Erro ao salvar alterações:", err);
+  }
+};
+
+  
+  const handleSaveOnEnter = async (
+  e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+  id: string
+) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    await handleSave(id); 
+  }
+};
+
+
+  // Função para salvar o campo de data
+  const handleDateBlur = async (id: number) => {
+    const item = data?.find((item) => item.licencaimportacaoid === id);
+    if (!item) return;
+  
+    try {
+      await updateLicencaImportacao(Number(id), {
+        ...item,
+        numeroOrquestra: parseInt(item.numeroOrquestra, 10) || 0,
+        dataRegistroLI: formatarDataInternacional(item.dataRegistroLI),
+        dataInclusaoOrquestra: formatarDataInternacional(item.dataInclusaoOrquestra),
+        previsaoDeferimento: formatarDataInternacional(item.previsaoDeferimento),
+      });
       console.log(`Licença de Importação com id ${id} atualizada com sucesso.`);
     } catch (err) {
       console.error("Erro ao atualizar Licença de Importação no backend:", err);
       alert("Erro ao salvar a alteração no backend. Tente novamente.");
     }
   };
-
+  
+  // Fim da função
   const handleAdd = async () => {
     try {
       const dataInclusao = formatarDataInternacional(
@@ -230,6 +266,7 @@ const Page = () => {
         dataRegistroLI: dataRegistro,
         dataInclusaoOrquestra: dataInclusao,
         previsaoDeferimento: formatarDataInternacional(previsaoDeferimento),
+        situacao: form.situacao, // ← isso já está incluído no spread (...form), então OK
       });
 
       const novaLI = {
@@ -253,7 +290,7 @@ const Page = () => {
         dataRegistroLI: "",
         dataInclusaoOrquestra: "",
         previsaoDeferimento: "",
-        situacao: "em análise",
+        situacao: "analise",
         observacoes: "",
       });
     } catch (error) {
@@ -262,9 +299,9 @@ const Page = () => {
   };
 
   const handleRemove = async (index: number) => {
-    const id = data![index].$id;
+    const id = data![index].licencaimportacaoid;
     try {
-      await deleteLicencaImportacao(id);
+      await deleteLicencaImportacao(Number(id)); 
       const updatedData = data!.filter((_, i) => i !== index);
       setData(updatedData);
     } catch (error) {
@@ -647,172 +684,177 @@ const Page = () => {
                   </TableRow>
                 ))
               : filteredData.map((item, index) => (
-                  <TableRow key={index}>
-                    {colunasVisiveis.imp && (
-                      <TableCell>
-                        <Input
-                          value={item.imp}
-                          onChange={(e) =>
-                            handleChange("imp", e.target.value, item.$id)
-                          }
-                          className="w-full sm:w-[110px]"
-                        />
-                      </TableCell>
-                    )}
-                    {colunasVisiveis.importador && (
-                      <TableCell>
-                        <Input
-                          value={item.importador}
-                          onChange={(e) =>
-                            handleChange("importador", e.target.value, item.$id)
-                          }
-                          className="w-full sm:w-[120px]"
-                        />
-                      </TableCell>
-                    )}
-                    {colunasVisiveis.referenciaDoCliente && (
-                      <TableCell>
-                        <Input
-                          value={item.referenciaDoCliente}
-                          onChange={(e) =>
-                            handleChange(
-                              "referenciaDoCliente",
-                              e.target.value,
-                              item.$id
-                            )
-                          }
-                          className="w-full sm:w-[110px]"
-                        />
-                      </TableCell>
-                    )}
-                    {colunasVisiveis.numeroOrquestra && (
-                      <TableCell>
-                        <Input
-                          value={item.numeroOrquestra}
-                          onChange={(e) =>
-                            handleChange(
-                              "numeroOrquestra",
-                              e.target.value,
-                              item.$id
-                            )
-                          }
-                          className="w-full sm:w-[110px]"
-                        />
-                      </TableCell>
-                    )}
-                    {colunasVisiveis.numeroLi && (
-                      <TableCell>
-                        <Input
-                          value={item.numeroLi}
-                          onChange={(e) =>
-                            handleChange("numeroLi", e.target.value, item.$id)
-                          }
-                          className="w-full sm:w-[120px]"
-                        />
-                      </TableCell>
-                    )}
-                    {colunasVisiveis.ncm && (
-                      <TableCell>
-                        <Input
-                          value={item.ncm}
-                          onChange={(e) =>
-                            handleChange("ncm", e.target.value, item.$id)
-                          }
-                          className="w-full sm:w-[110px]"
-                        />
-                      </TableCell>
-                    )}
-                    {colunasVisiveis.dataRegistroLI && (
-                      <TableCell>
-                        <Input
-                          type="text"
-                          value={item.dataRegistroLI}
-                          onChange={(e) =>
-                            handleChange(
-                              "dataRegistroLI",
-                              e.target.value,
-                              item.$id
-                            )
-                          }
-                          className="w-full sm:w-[110px]"
-                        />
-                      </TableCell>
-                    )}
-                    {colunasVisiveis.dataInclusaoOrquestra && (
-                      <TableCell>
-                        <Input
-                          type="text"
-                          value={item.dataInclusaoOrquestra}
-                          onChange={(e) =>
-                            handleChange(
-                              "dataInclusaoOrquestra",
-                              e.target.value,
-                              item.$id
-                            )
-                          }
-                          className="w-full sm:w-[130px]"
-                        />
-                      </TableCell>
-                    )}
-                    {colunasVisiveis.previsaoDeferimento && (
-                      <TableCell>
-                        <Input
-                          type="text"
-                          value={item.previsaoDeferimento}
-                          readOnly
-                          className="w-full sm:w-[130px]"
-                        />
-                      </TableCell>
-                    )}
-                    {colunasVisiveis.situacao && (
-                      <TableCell>
-                        <select
-                          className={`${getSituacaoColor(item.situacao)} rounded border border-gray-300 bg-transparent px-2 py-1 dark:border-white/20 dark:bg-zinc-900`}
-                          value={item.situacao}
-                          onChange={(e) =>
-                            handleChange("situacao", e.target.value, item.$id)
-                          }
-                        >
-                          <option value="em análise">Em análise</option>
-                          <option value="cancelada">Cancelada</option>
-                          <option value="deferida">Deferida</option>
-                          <option value="indeferida">Indeferida</option>
-                        </select>
-                      </TableCell>
-                    )}
-                    {colunasVisiveis.observacoes && (
-                      <TableCell>
-                        <Textarea
-                          value={item.observacoes}
-                          onChange={(e) =>
-                            handleChange(
-                              "observacoes",
-                              e.target.value,
-                              item.$id
-                            )
-                          }
-                          className="w-full"
-                        />
-                      </TableCell>
-                    )}
+              <TableRow key={index}>
+                  {colunasVisiveis.imp && (
                     <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => handleDuplicate(index)}
-                          className="w-[40px] dark:bg-zinc-800 dark:text-white"
-                        >
-                          <FaCopy />
-                        </Button>
-                        <Button
-                          onClick={() => handleRemove(index)}
-                          className="w-[40px] dark:bg-zinc-800 dark:text-white"
-                        >
-                          <FaTrashAlt />
-                        </Button>
-                      </div>
+                      <Input
+                        value={item.imp}
+                        placeholder="Digite e pressione Enter"
+                        onChange={(e) =>
+                          handleChange("imp", e.target.value, item.licencaimportacaoid)
+                        }
+                        onKeyDown={(e) => handleSaveOnEnter(e, item.licencaimportacaoid)}
+                        onBlur={() => handleSave(item.licencaimportacaoid)}
+                        className="w-full sm:w-[110px] focus:ring-2 ring-primary"
+                      />
                     </TableCell>
-                  </TableRow>
-                ))}
+                  )}
+                  {colunasVisiveis.importador && (
+                    <TableCell>
+                      <Input
+                        value={item.importador}
+                        onChange={(e) =>
+                          handleChange("importador", e.target.value, item.licencaimportacaoid)
+                        }
+                          onBlur={() => handleSave(item.licencaimportacaoid)}
+                          className="w-full sm:w-[110px] focus:ring-2 ring-primary"
+                      />
+                    </TableCell>
+                  )}
+                  {colunasVisiveis.referenciaDoCliente && (
+                    <TableCell>
+                      <Input
+                        value={item.referenciaDoCliente}
+                        onChange={(e) =>
+                          handleChange("referenciaDoCliente", e.target.value, item.licencaimportacaoid)
+                        }
+                          onBlur={() => handleSave(item.licencaimportacaoid)}
+                          className="w-full sm:w-[110px] focus:ring-2 ring-primary"
+                      />
+                    </TableCell>
+                  )}
+                  {colunasVisiveis.numeroOrquestra && (
+                    <TableCell>
+                      <Input
+                        value={item.numeroOrquestra}
+                        onChange={(e) =>
+                          handleChange("numeroOrquestra", e.target.value, item.licencaimportacaoid)
+                        }
+                          onBlur={() => handleSave(item.licencaimportacaoid)}
+                          className="w-full sm:w-[110px] focus:ring-2 ring-primary"
+                      />
+                    </TableCell>
+                  )}
+                  {colunasVisiveis.numeroLi && (
+                    <TableCell>
+                      <Input
+                        value={item.numeroLi}
+                        onChange={(e) =>
+                          handleChange("numeroLi", e.target.value, item.licencaimportacaoid)
+                        }
+                          onBlur={() => handleSave(item.licencaimportacaoid)}
+                          className="w-full sm:w-[110px] focus:ring-2 ring-primary"
+                      />
+                    </TableCell>
+                  )}
+                  {colunasVisiveis.ncm && (
+                    <TableCell>
+                      <Input
+                        value={item.ncm}
+                        onChange={(e) =>
+                          handleChange("ncm", e.target.value, item.licencaimportacaoid)
+                        }
+                          onBlur={() => handleSave(item.licencaimportacaoid)}
+                          className="w-full sm:w-[110px] focus:ring-2 ring-primary"
+                      />
+                    </TableCell>
+                  )}
+                  {colunasVisiveis.dataRegistroLI && (
+                    <TableCell>
+                      <Input
+                        type="text"
+                        value={item.dataRegistroLI}
+                        onChange={(e) =>
+                          handleChange("dataRegistroLI", e.target.value, item.licencaimportacaoid)
+                        }
+                          onBlur={() => handleSave(item.licencaimportacaoid)}
+                          className="w-full sm:w-[110px] focus:ring-2 ring-primary"
+                      />
+                    </TableCell>
+                  )}
+                  {colunasVisiveis.dataInclusaoOrquestra && (
+                    <TableCell>
+                      <Input
+                        type="text"
+                        value={item.dataInclusaoOrquestra}
+                        onChange={(e) =>
+                          handleChange("dataInclusaoOrquestra", e.target.value, item.licencaimportacaoid)
+                        }
+                          onBlur={() => handleSave(item.licencaimportacaoid)}
+                          className="w-full sm:w-[110px] focus:ring-2 ring-primary"
+                      />
+                    </TableCell>
+                  )}
+                  {colunasVisiveis.previsaoDeferimento && (
+                    <TableCell>
+                      <Input
+                        type="text"
+                        value={item.previsaoDeferimento}
+                        readOnly
+                        className="w-full sm:w-[130px]"
+                      />
+                    </TableCell>
+                  )}
+                  {colunasVisiveis.situacao && (
+                    <TableCell>
+                    <select
+                      value={item.situacao}
+                      onChange={async (e) => {
+                        const valorSelecionado = e.target.value;
+
+                        // Atualiza o estado local
+                        handleChange("situacao", valorSelecionado, item.licencaimportacaoid);
+
+                        // Chama o salvamento com o valor atualizado manualmente
+                        await updateLicencaImportacao(Number(item.licencaimportacaoid), {
+                          ...item,
+                          situacao: valorSelecionado, // ← força o valor correto aqui
+                          numeroOrquestra: parseInt(item.numeroOrquestra, 10) || 0,
+                          dataRegistroLI: formatarDataInternacional(item.dataRegistroLI),
+                          dataInclusaoOrquestra: formatarDataInternacional(item.dataInclusaoOrquestra),
+                          previsaoDeferimento: formatarDataInternacional(item.previsaoDeferimento),
+                          observacoes: item.observacoes,
+                        });
+                      }}
+                      className={`${getSituacaoColor(item.situacao)} rounded border border-gray-300 bg-transparent px-2 py-1 dark:border-white/20 dark:bg-zinc-900 focus:ring-2 ring-primary`}>
+                      <option value="analise">Em Análise</option>
+                      <option value="cancelada">Cancelada</option>
+                      <option value="deferida">Deferida</option>
+                      <option value="indeferida">Indeferida</option>
+                    </select>
+                    </TableCell>
+                  )}
+                  {colunasVisiveis.observacoes && (
+                    <TableCell>
+                      <Textarea
+                        value={item.observacoes}
+                        onChange={(e) =>
+                          handleChange("observacoes", e.target.value, item.licencaimportacaoid)
+                        }
+                        onKeyDown={(e) => handleSaveOnEnter(e, item.licencaimportacaoid)}
+                        onBlur={() => handleSave(item.licencaimportacaoid)}
+                        className="w-full"
+              />
+                    </TableCell>
+                  )}
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleDuplicate(index)}
+                        className="w-[40px] dark:bg-zinc-800 dark:text-white"
+                      >
+                        <FaCopy />
+                      </Button>
+                      <Button
+                        onClick={() => handleRemove(index)}
+                        className="w-[40px] dark:bg-zinc-800 dark:text-white"
+                      >
+                        <FaTrashAlt />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
           </TableBody>
         </Table>
       </div>
