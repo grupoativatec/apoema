@@ -45,7 +45,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/processos",
-        destination: "http://179.127.172.186:44001/api/processos", // Proxy para o seu endpoint
+        destination: "http://172.30.20.192:4001/api/processos", // Proxy para o seu endpoint
       },
     ];
   },
