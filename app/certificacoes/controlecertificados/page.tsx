@@ -1,3 +1,5 @@
+// page.tsx completo com correção aplicada
+
 'use client'
 
 import * as XLSX from "xlsx";
@@ -34,14 +36,13 @@ import {
   createCertification,
 } from "@/lib/actions/certifications.actions";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
-// ✅ Função de validação de datas
 const isValidDate = (value: string) => {
   const d = new Date(value);
   return !isNaN(d.getTime());
 };
 
-// ✅ Formatação de data para exibição
 const formatDateAsString = (date: any): string => {
   if (!date) return "";
   const d = new Date(date);
@@ -52,6 +53,8 @@ const formatDateAsString = (date: any): string => {
 };
 
 const Page = () => {
+  const { toast } = useToast()
+
   const [certifications, setCertifications] = useState<any[]>([]);
   const [editingCertification, setEditingCertification] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -136,8 +139,6 @@ const Page = () => {
           certificado: editingCertification.certificado.trim(),
         };
 
-        console.log("Edit Payload:", payload); // ⚠️ Depuração
-
         await updateCertification(editingCertification.id, payload);
 
         setCertifications((prev) =>
@@ -150,8 +151,18 @@ const Page = () => {
 
         setEditingCertification(null);
         setIsEditDialogOpen(false);
+        toast({
+          title: "Salvando alterações",
+          description: "Alterações salvas com sucesso.",
+        })
       } catch (error) {
         console.error("Erro ao salvar edição:", error);
+        toast({
+          title: "Erro ao salvar",
+          description: "Não foi possivel salvar as alterações. Tente novamente!",
+          variant: "destructive"
+
+        })
       }
     }
   };
@@ -160,8 +171,17 @@ const Page = () => {
     try {
       await deleteCertification(id);
       setCertifications((prev) => prev.filter((c) => c.id !== id));
+      toast({
+        title: "Deletando....",
+        description: "Certificado Deletado com sucesso.",
+      })
     } catch (error) {
       console.error("Erro ao excluir:", error);
+      toast({
+        title: "Erro inesperado!",
+        description: "Não foi possivel completar sua ação!",
+        variant: "destructive"
+      })
     }
   };
 
@@ -185,8 +205,6 @@ const Page = () => {
         certificado: newCertification.certificado.trim(),
       };
 
-      console.log("Add Payload:", payload); // ⚠️ Depuração
-
       await createCertification(payload);
       setCertifications((prev) => [...prev, payload]);
 
@@ -198,9 +216,19 @@ const Page = () => {
         manutencaoEmAndamento: false,
         certificado: "",
       });
+
+      toast({
+        title: "Sucesso!",
+        description: "Novo certificado adicionar com sucesso.",
+      })
       setIsAddDialogOpen(false);
     } catch (error) {
       console.error("Erro ao adicionar:", error);
+      toast({
+        title: "Erro inesperado!",
+        description: "Não foi possivel completar sua ação!",
+        variant: "destructive"
+      })
     }
   };
 
@@ -262,10 +290,7 @@ const Page = () => {
                 <TableHead>NOME COMERCIAL</TableHead>
                 <TableHead>CERTIFICADO</TableHead>
                 <TableHead>VALIDADE</TableHead>
-                <TableHead
-                  className="cursor-pointer"
-                  onClick={handleSortByMaintenanceDate}
-                >
+                <TableHead className="cursor-pointer" onClick={handleSortByMaintenanceDate}>
                   DATA MANUTENÇÃO {sortOrder === "asc" ? "↑" : "↓"}
                 </TableHead>
                 <TableHead>EM ANDAMENTO</TableHead>
@@ -279,9 +304,7 @@ const Page = () => {
                   <TableCell>{cert.nomeComercial}</TableCell>
                   <TableCell>{cert.certificado}</TableCell>
                   <TableCell>{formatDateAsString(cert.validade)}</TableCell>
-                  <TableCell>
-                    {formatDateAsString(cert.manutencaoData)}
-                  </TableCell>
+                  <TableCell>{formatDateAsString(cert.manutencaoData)}</TableCell>
                   <TableCell>
                     <Select
                       value={cert.manutencaoEmAndamento ? "sim" : "nao"}
@@ -299,12 +322,10 @@ const Page = () => {
                     </Select>
                   </TableCell>
                   <TableCell className="flex gap-2">
-                    <Button
-                      onClick={() => {
-                        setEditingCertification(cert);
-                        setIsEditDialogOpen(true);
-                      }}
-                    >
+                    <Button onClick={() => {
+                      setEditingCertification(cert);
+                      setIsEditDialogOpen(true);
+                    }}>
                       <FaEdit />
                     </Button>
                     <Button onClick={() => handleDeleteCertification(cert.id)}>
@@ -330,50 +351,35 @@ const Page = () => {
                 placeholder="REF"
                 value={editingCertification.referencia}
                 onChange={(e) =>
-                  setEditingCertification((prev: any) => ({
-                    ...prev,
-                    referencia: e.target.value,
-                  }))
+                  setEditingCertification((prev: any) => ({ ...prev, referencia: e.target.value }))
                 }
               />
               <Input
                 placeholder="Nome Comercial"
                 value={editingCertification.nomeComercial}
                 onChange={(e) =>
-                  setEditingCertification((prev: any) => ({
-                    ...prev,
-                    nomeComercial: e.target.value,
-                  }))
+                  setEditingCertification((prev: any) => ({ ...prev, nomeComercial: e.target.value }))
                 }
               />
               <Input
                 placeholder="Certificado"
                 value={editingCertification.certificado}
                 onChange={(e) =>
-                  setEditingCertification((prev: any) => ({
-                    ...prev,
-                    certificado: e.target.value,
-                  }))
+                  setEditingCertification((prev: any) => ({ ...prev, certificado: e.target.value }))
                 }
               />
               <Input
                 type="date"
-                value={editingCertification.validade?.split("T")[0] || ""}
+                value={editingCertification.validade ? new Date(editingCertification.validade).toISOString().split("T")[0] : ""}
                 onChange={(e) =>
-                  setEditingCertification((prev: any) => ({
-                    ...prev,
-                    validade: e.target.value,
-                  }))
+                  setEditingCertification((prev: any) => ({ ...prev, validade: e.target.value }))
                 }
               />
               <Input
                 type="date"
-                value={editingCertification.manutencaoData?.split("T")[0] || ""}
+                value={editingCertification.manutencaoData ? new Date(editingCertification.manutencaoData).toISOString().split("T")[0] : ""}
                 onChange={(e) =>
-                  setEditingCertification((prev: any) => ({
-                    ...prev,
-                    manutencaoData: e.target.value,
-                  }))
+                  setEditingCertification((prev: any) => ({ ...prev, manutencaoData: e.target.value }))
                 }
               />
             </div>
@@ -394,52 +400,27 @@ const Page = () => {
             <Input
               placeholder="REF"
               value={newCertification.referencia}
-              onChange={(e) =>
-                setNewCertification((prev) => ({
-                  ...prev,
-                  referencia: e.target.value,
-                }))
-              }
+              onChange={(e) => setNewCertification((prev) => ({ ...prev, referencia: e.target.value }))}
             />
             <Input
               placeholder="Nome Comercial"
               value={newCertification.nomeComercial}
-              onChange={(e) =>
-                setNewCertification((prev) => ({
-                  ...prev,
-                  nomeComercial: e.target.value,
-                }))
-              }
+              onChange={(e) => setNewCertification((prev) => ({ ...prev, nomeComercial: e.target.value }))}
             />
             <Input
               placeholder="Certificado"
               value={newCertification.certificado}
-              onChange={(e) =>
-                setNewCertification((prev) => ({
-                  ...prev,
-                  certificado: e.target.value,
-                }))
-              }
+              onChange={(e) => setNewCertification((prev) => ({ ...prev, certificado: e.target.value }))}
             />
             <Input
               type="date"
               value={newCertification.validade}
-              onChange={(e) =>
-                setNewCertification((prev) => ({
-                  ...prev,
-                  validade: e.target.value,
-                }))
-              }
+              onChange={(e) => setNewCertification((prev) => ({ ...prev, validade: e.target.value }))}
             />
             <Input
               type="date"
               value={newCertification.manutencaoData}
-              onChange={(e) =>
-                setNewCertification((prev) => ({
-                  ...prev,
-                  manutencaoData: e.target.value,
-                }))
-              }
+              onChange={(e) => setNewCertification((prev) => ({ ...prev, manutencaoData: e.target.value }))}
             />
           </div>
           <DialogFooter>
