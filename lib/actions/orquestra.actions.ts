@@ -5,8 +5,9 @@
 import { createAdminClient } from "@/lib/appwrite";
 import { appwriteConfig } from "@/lib/appwrite/config";
 import { ID, Query } from "node-appwrite";
+import { pool } from "../database/db";
 
-// Função para criar um documento na tabela "orquestra"
+// CREATE
 export const createOrquestra = async (data: {
   imp: string;
   referencia: string;
@@ -19,38 +20,43 @@ export const createOrquestra = async (data: {
   analista?: string;
 }) => {
   try {
-    const { databases } = await createAdminClient();
+    const status = "PendenteLi"
 
-    // Verificar se a orquestra já existe
-    const existingOrquestras = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.orquestraCollectionId,
-      [Query.equal("imp", data.imp), Query.limit(1)]
+    const [existing]: any = await pool.query(
+      "SELECT * FROM processos WHERE imp = ? LIMIT 1",
+      [data.imp]
     );
 
-    // Se a orquestra já existir, retorne-a sem criar uma nova
-    if (existingOrquestras.total > 0) {
-      return existingOrquestras.documents[0]; // Retorne o documento existente
-    }
+    if (existing.length > 0) return existing[0];
 
-    // Caso contrário, crie uma nova orquestra
-    const result = await databases.createDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.orquestraCollectionId,
-      ID.unique(),
-      data
+    const [result]: any = await pool.query(
+      `INSERT INTO processos (
+        imp, referencia, exportador, importador,
+        recebimento, chegada, destino, status, analista
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        data.imp,
+        data.referencia,
+        data.exportador,
+        data.importador,
+        data.recebimento,
+        data.chegada,
+        data.destino,
+        status,
+        data.analista,
+      ]
     );
 
-    return result;
+    return { processoid: result.insertId, ...data };
   } catch (error) {
-    console.error("Erro ao criar Orquestra", error);
+    console.error("Erro ao criar processo:", error);
     throw error;
   }
 };
 
 // Função para atualizar um documento na tabela "orquestra"
 export const updateOrquestra = async (
-  id: string,
+  id: number,
   data: {
     imp: string;
     referencia: string;
@@ -65,95 +71,71 @@ export const updateOrquestra = async (
   }
 ) => {
   try {
-    const { databases } = await createAdminClient();
-
-    const result = await databases.updateDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.orquestraCollectionId,
-      id,
-      data
+    await pool.query(
+      `UPDATE processos SET 
+        imp = ?, referencia = ?, exportador = ?, importador = ?, 
+        recebimento = ?, chegada = ?, destino = ?, 
+        status = ?, obs = ?, analista = ?
+      WHERE processoid = ?`,
+      [
+        data.imp,
+        data.referencia,
+        data.exportador,
+        data.importador,
+        data.recebimento,
+        data.chegada,
+        data.destino,
+        data.status ?? "",
+        data.obs ?? "",
+        data.analista ?? "",
+        id,
+      ]
     );
 
-    return result;
+    return { processoid: id, ...data };
   } catch (error) {
-    console.error("Erro ao atualizar Orquestra", error);
+    console.error("Erro ao atualizar processo:", error);
     throw error;
   }
 };
 
-// Função para listar todos os documentos da tabela "orquestra"
+// READ
 export const getOrquestras = async () => {
   try {
-    const { databases } = await createAdminClient();
-
-    const result = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.orquestraCollectionId,
-      [Query.limit(7000)]
-    );
-
-    return result.documents;
+    const [rows]: any = await pool.query("SELECT * FROM processos");
+    return rows;
   } catch (error) {
-    console.error("Erro ao listar Orquestras", error);
+    console.error("Erro ao buscar orquestras:", error);
     throw error;
   }
 };
 
 // Função para excluir um documento da tabela "orquestra"
-export const deleteOrquestra = async (id: string) => {
+export const deleteOrquestra = async (id: number) => {
   try {
-    const { databases } = await createAdminClient();
-
-    const result = await databases.deleteDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.orquestraCollectionId,
-      id
-    );
-
-    return result;
+    await pool.query("DELETE FROM processos WHERE processoid = ?", [id]);
+    return { success: true };
   } catch (error) {
-    console.error("Erro ao excluir Orquestra", error);
+    console.error("Erro ao deletar processo:", error);
     throw error;
   }
 };
 
 // Função para retornar as orquestras que foram recebidas hoje
+// GET recebidas hoje
 export const getOrquestrasRecebidasHoje = async () => {
   try {
-    const { databases } = await createAdminClient();
-
-    const formatarData = (data: Date) => {
-      return `${data.getDate().toString().padStart(2, "0")}/${(
-        data.getMonth() + 1
-      )
-        .toString()
-        .padStart(2, "0")}/${data.getFullYear()}`;
-    };
-
     const hoje = new Date();
-    const dataDeHoje = formatarData(hoje);
+    const data = hoje.toLocaleDateString("pt-BR");
 
-    const result = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.orquestraCollectionId,
-      [Query.equal("recebimento", dataDeHoje), Query.limit(10)]
+    const [rows]: any = await pool.query(
+      "SELECT * FROM processos WHERE recebimento = ? LIMIT 10",
+      [data]
     );
 
-    if (result.total > 0) {
-      return result.documents.map((doc) => ({
-        imp: doc.imp,
-        referencia: doc.referencia,
-        exportador: doc.exportador,
-        importador: doc.importador,
-        recebimento: doc.recebimento,
-        chegada: doc.chegada,
-        destino: doc.destino,
-      }));
-    }
-
-    return [];
+    return rows;
   } catch (error) {
-    console.error("Erro ao buscar Orquestras recebidas hoje:", error);
+    console.error("Erro ao buscar recebidas hoje:", error);
     throw error;
   }
 };
@@ -161,82 +143,35 @@ export const getOrquestrasRecebidasHoje = async () => {
 // Função para retornar a quantidade de orquestras no mês atual
 export const getQuantidadeOrquestrasNoMes = async () => {
   try {
-    const { databases } = await createAdminClient();
-
     const hoje = new Date();
-    const anoAtual = hoje.getFullYear();
-    const mesAtual = hoje.getMonth() + 1;
+    const mes = (hoje.getMonth() + 1).toString().padStart(2, "0");
+    const ano = hoje.getFullYear();
 
-    const result = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.orquestraCollectionId,
-      [Query.limit(7000)]
-    );
+    const [rows]: any = await pool.query("SELECT recebimento FROM processos");
 
-    const orquestrasNoMes = result.documents.filter((doc) => {
-      const dataRecebimento = doc.recebimento;
-      const [dia, mes, ano] = dataRecebimento.split("/").map(Number);
+    const total = rows.filter((row: any) => {
+      const [dia, mesRow, anoRow] = row.recebimento.split("/").map(Number);
+      return mesRow === parseInt(mes) && anoRow === ano;
+    }).length;
 
-      return ano === anoAtual && mes === mesAtual;
-    });
-
-    return orquestrasNoMes.length;
+    return total;
   } catch (error) {
-    console.error("Erro ao buscar Orquestras no mês:", error);
-    throw error;
-  }
-};
-
-// Função para retornar a quantidade de orquestras com um destino específico
-export const getQuantidadeOrquestrasPorDestino = async (destino: string) => {
-  try {
-    const { databases } = await createAdminClient();
-
-    const result = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.orquestraCollectionId,
-      [Query.equal("destino", destino), Query.limit(7000)]
-    );
-
-    return result.total;
-  } catch (error) {
-    console.error("Erro ao buscar Orquestras por destino:", error);
+    console.error("Erro ao contar orquestras no mês:", error);
     throw error;
   }
 };
 
 // Função para atualizar o status de uma orquestra pelo campo "imp"
-export const updateOrquestraStatus = async (
-  imp: string,
-  novoStatus: string
-) => {
+export const updateOrquestraStatus = async (imp: string, status: string) => {
   try {
-    const { databases } = await createAdminClient();
-
-    // Buscar o documento da orquestra pelo campo "imp"
-    const orquestras = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.orquestraCollectionId,
-      [Query.equal("imp", imp), Query.limit(1)]
+    const [rows]: any = await pool.query(
+      "UPDATE processos SET status = ? WHERE imp = ?",
+      [status, imp]
     );
 
-    if (orquestras.total === 0) {
-      throw new Error(`Orquestra com imp "${imp}" não encontrada.`);
-    }
-
-    const docId = orquestras.documents[0].$id;
-
-    // Atualizar somente o status
-    const result = await databases.updateDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.orquestraCollectionId,
-      docId,
-      { status: novoStatus }
-    );
-
-    return result;
+    return { imp, status };
   } catch (error) {
-    console.error("Erro ao atualizar status da Orquestra:", error);
+    console.error("Erro ao atualizar status:", error);
     throw error;
   }
 };
@@ -244,32 +179,14 @@ export const updateOrquestraStatus = async (
 // Função para atualizar a observação ("obs") de uma orquestra pelo campo "imp"
 export const updateOrquestraObs = async (imp: string, obs: string) => {
   try {
-    const { databases } = await createAdminClient();
-
-    // 1) Busca o documento da orquestra pelo campo "imp"
-    const orquestras = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.orquestraCollectionId,
-      [Query.equal("imp", imp), Query.limit(1)]
+    const [rows]: any = await pool.query(
+      "UPDATE processos SET obs = ? WHERE imp = ?",
+      [obs, imp]
     );
 
-    if (orquestras.total === 0) {
-      throw new Error(`Orquestra com imp "${imp}" não encontrada.`);
-    }
-
-    const docId = orquestras.documents[0].$id;
-
-    // 2) Atualiza apenas o campo "obs"
-    const result = await databases.updateDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.orquestraCollectionId,
-      docId,
-      { obs }
-    );
-
-    return result;
+    return { imp, obs };
   } catch (error) {
-    console.error("Erro ao atualizar observação da Orquestra:", error);
+    console.error("Erro ao atualizar obs do processo:", error);
     throw error;
   }
 };
@@ -277,21 +194,13 @@ export const updateOrquestraObs = async (imp: string, obs: string) => {
 // Função para retornar todas as orquestras cujo status esteja como "finalizado"
 export const getOrquestrasFinalizadas = async () => {
   try {
-    const { databases } = await createAdminClient();
-
-    const result = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.orquestraCollectionId,
-      [
-        Query.equal("status", "Finalizado"),
-        Query.limit(7000), // ajusta conforme o volume esperado
-      ]
+    const [rows]: any = await pool.query(
+      "SELECT * FROM processos WHERE status = 'Finalizado'"
     );
 
-    // Retorna todos os campos de cada documento
-    return result.documents;
+    return rows;
   } catch (error) {
-    console.error("Erro ao buscar Orquestras finalizadas:", error);
+    console.error("Erro ao buscar finalizadas:", error);
     throw error;
   }
 };

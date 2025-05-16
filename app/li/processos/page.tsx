@@ -146,6 +146,7 @@ const Page = () => {
               Importador: string;
               DataCadastro: string;
               DataPrevisaoETA: string;
+              Analista: string;
               Destino: string;
             }) => {
               const orquestraData = {
@@ -155,6 +156,7 @@ const Page = () => {
                 importador: processo.Importador || "",
                 recebimento: processo.DataCadastro || "",
                 chegada: processo.DataPrevisaoETA || "",
+                analista: processo.Analista || "",
                 destino: processo.Destino || "",
               };
 
