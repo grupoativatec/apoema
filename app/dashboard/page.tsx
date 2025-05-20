@@ -40,16 +40,19 @@ const Home = () => {
 
   useEffect(() => {
     const fetchLicencas = async () => {
-      const today = new Date().toISOString().split('T')[0];
-      const cachedData = localStorage.getItem('licencasDeferidasHoje');
-      const cachedDate = localStorage.getItem('licencasDeferidasHojeDate');
+      const today = new Date().toISOString().split('T')[0]; // "YYYY-MM-DD"
+      const cacheKey = 'licencasDeferidasHoje';
+      const cacheDateKey = 'licencasDeferidasHojeDate';
 
+      // 1a) Mostrar cache imediatamente, se for do dia de hoje
+      const cachedData = localStorage.getItem(cacheKey);
+      const cachedDate = localStorage.getItem(cacheDateKey);
       if (cachedData && cachedDate === today) {
         setLiData(JSON.parse(cachedData));
         setIsLoading(false);
-        return;
       }
 
+      // 1b) Sempre buscar dados frescos em background
       try {
         const licencas = await getLicencasImportacaoDeferidasHoje();
         const formatadas = licencas.map((item: LicencaImportacao) => ({
@@ -58,8 +61,8 @@ const Home = () => {
           situacao: item.situacao || 'Indefinido',
         }));
 
-        localStorage.setItem('licencasDeferidasHoje', JSON.stringify(formatadas));
-        localStorage.setItem('licencasDeferidasHojeDate', today);
+        localStorage.setItem(cacheKey, JSON.stringify(formatadas));
+        localStorage.setItem(cacheDateKey, today);
         setLiData(formatadas);
       } catch (error) {
         console.error('Erro ao buscar Licenças deferidas hoje:', error);
@@ -68,32 +71,32 @@ const Home = () => {
       }
     };
 
-    if (!liData.length) fetchLicencas();
-    else setIsLoading(false);
+    fetchLicencas();
   }, []);
 
   useEffect(() => {
     const fetchQuantidades = async () => {
-      const monthYear = `${new Date().getMonth()}-${new Date().getFullYear()}`;
-      const cachedQuantidades = localStorage.getItem('quantidadesLicencasMes');
-      const cachedMonthYear = localStorage.getItem('quantidadesLicencasMesDate');
+      const monthYear = `${new Date().getMonth() + 1}-${new Date().getFullYear()}`;
+      const cacheKey = 'quantidadesLicencasMes';
+      const cacheDateKey = 'quantidadesLicencasMesDate';
 
-      if (cachedQuantidades && cachedMonthYear === monthYear) {
-        const quantidades = JSON.parse(cachedQuantidades);
-        setQuantidadeLicencas(quantidades.feitas);
-        setQuantidadeLicencasEmAnalise(quantidades.emAnalise);
-        setQuantidadeLicencasDeferidas(quantidades.deferidas);
-        return;
+      const cachedRaw = localStorage.getItem(cacheKey);
+      const cachedMonthYear = localStorage.getItem(cacheDateKey);
+      if (cachedRaw && cachedMonthYear === monthYear) {
+        const { feitas, emAnalise, deferidas } = JSON.parse(cachedRaw);
+        setQuantidadeLicencas(feitas);
+        setQuantidadeLicencasEmAnalise(emAnalise);
+        setQuantidadeLicencasDeferidas(deferidas);
       }
 
       try {
         const feitas = await getQuantidadeLicencasImportacaoFeitasNoMes();
         const emAnalise = await getQuantidadeLicencasImportacaoEmAnaliseNoMes();
         const deferidas = await getQuantidadeLicencasImportacaoDeferidasNoMes();
+        const novas = { feitas, emAnalise, deferidas };
 
-        const newQuantidades = { feitas, emAnalise, deferidas };
-        localStorage.setItem('quantidadesLicencasMes', JSON.stringify(newQuantidades));
-        localStorage.setItem('quantidadesLicencasMesDate', monthYear);
+        localStorage.setItem(cacheKey, JSON.stringify(novas));
+        localStorage.setItem(cacheDateKey, monthYear);
 
         setQuantidadeLicencas(feitas);
         setQuantidadeLicencasEmAnalise(emAnalise);
@@ -137,6 +140,17 @@ const Home = () => {
         {status}
       </span>
     );
+  };
+
+  const formatBRDate = (dateStr?: string) => {
+    // se veio false ou veio explícito 'N/A', joga o traço
+    if (!dateStr || dateStr === 'N/A') return '-';
+
+    // tenta dar parse direto na string que vier
+    const date = new Date(dateStr);
+    return isNaN(date.getTime())
+      ? '-' // parsing falhou
+      : date.toLocaleDateString('pt-BR'); // format BR
   };
 
   return (
@@ -217,7 +231,7 @@ const Home = () => {
                     <td className="py-3">{item.importador}</td>
                     <td className="py-3">{item.numeroLi}</td>
                     <td className="py-3">{statusBadge(item.situacao)}</td>
-                    <td className="py-3">{item.previsaoDeferimento}</td>
+                    <td className="py-3">{formatBRDate(item.previsaoDeferimento)}</td>
                   </tr>
                 ))}
               </tbody>

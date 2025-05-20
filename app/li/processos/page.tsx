@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -9,49 +9,48 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import {
   createOrquestra,
   getOrquestras,
   updateOrquestra,
   updateOrquestraObs,
   updateOrquestraStatus,
-} from "@/lib/actions/orquestra.actions";
-import EmptyState from "@/components/EmptyState";
-import { Textarea } from "@/components/ui/textarea";
+} from '@/lib/actions/orquestra.actions';
+import EmptyState from '@/components/EmptyState';
+import { Textarea } from '@/components/ui/textarea';
 
 const Page = () => {
   const [orquestra, setOrquestra] = useState<any[]>([]);
   const [filteredOrquestra, setFilteredOrquestra] = useState<any[]>([]);
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<
-    "lis" | "orquestra" | "liconferencia"  | "finalizados"
-  >("lis");
-  const [sortField, setSortField] = useState("status");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'lis' | 'orquestra' | 'liconferencia' | 'finalizados'>(
+    'lis',
+  );
+  const [sortField, setSortField] = useState('status');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const rawTerm = event.target.value;
     // lower + remove espaços
-    const term = rawTerm.toLowerCase().replace(/\s+/g, "");
+    const term = rawTerm.toLowerCase().replace(/\s+/g, '');
 
     setSearchTerm(rawTerm);
 
     // helper que normaliza qualquer string do objeto
-    const normalize = (str?: string) =>
-      (str || "").toLowerCase().replace(/\s+/g, "");
+    const normalize = (str?: string) => (str || '').toLowerCase().replace(/\s+/g, '');
 
     // filtra processos
 
@@ -77,35 +76,28 @@ const Page = () => {
         prevOrquestras.map((orquestra) =>
           orquestra.imp === imp
             ? { ...orquestra, status: novoStatus } // Atualiza o status
-            : orquestra
-        )
+            : orquestra,
+        ),
       );
 
       // Se necessário, também atualize o `filteredOrquestra`
       setFilteredOrquestra((prevFiltered) =>
         prevFiltered.map((orquestra) =>
-          orquestra.imp === imp
-            ? { ...orquestra, status: novoStatus }
-            : orquestra
-        )
+          orquestra.imp === imp ? { ...orquestra, status: novoStatus } : orquestra,
+        ),
       );
     } catch (error) {
-      console.error("Erro ao atualizar status:", error);
+      console.error('Erro ao atualizar status:', error);
     }
   };
 
-  const statusOrder = [
-    "Em andamento",
-    "Pendente",
-    "Aguardando informação",
-    "Finalizado",
-  ];
+  const statusOrder = ['Em andamento', 'Pendente', 'Aguardando informação', 'Finalizado'];
 
   const sortedOrquestra = [...filteredOrquestra].sort((a, b) => {
-    if (sortField === "status") {
-      const indexA = statusOrder.indexOf(a.status || "Pendente");
-      const indexB = statusOrder.indexOf(b.status || "Pendente");
-      return sortDirection === "asc" ? indexA - indexB : indexB - indexA;
+    if (sortField === 'status') {
+      const indexA = statusOrder.indexOf(a.status || 'Pendente');
+      const indexB = statusOrder.indexOf(b.status || 'Pendente');
+      return sortDirection === 'asc' ? indexA - indexB : indexB - indexA;
     }
 
     return 0; // default, pode adicionar outros campos depois se quiser
@@ -113,10 +105,10 @@ const Page = () => {
 
   const handleSort = (field: string) => {
     if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
-      setSortDirection("asc");
+      setSortDirection('asc');
     }
   };
 
@@ -125,16 +117,16 @@ const Page = () => {
 
     const fetchAndSync = async () => {
       try {
-        const response = await fetch("/api/processos", {
-          method: "POST",
+        const response = await fetch('/api/processos', {
+          method: 'POST',
           headers: {
-            Authorization: "U1F7m!2x@Xq$Pz9eN#4vA%6tG^cL*bKq",
-            "Content-Type": "application/json",
+            Authorization: 'U1F7m!2x@Xq$Pz9eN#4vA%6tG^cL*bKq',
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({}),
         });
 
-        if (!response.ok) throw new Error("Erro ao buscar dados.");
+        if (!response.ok) throw new Error('Erro ao buscar dados.');
         const { dados: processosData = [] } = await response.json();
 
         await Promise.all(
@@ -150,14 +142,14 @@ const Page = () => {
               Destino: string;
             }) => {
               const orquestraData = {
-                imp: processo.Processo || "",
-                referencia: processo.Fatura || "",
-                exportador: processo.Cliente || "",
-                importador: processo.Importador || "",
-                recebimento: processo.DataCadastro || "",
-                chegada: processo.DataPrevisaoETA || "",
-                analista: processo.Analista || "",
-                destino: processo.Destino || "",
+                imp: processo.Processo || '',
+                referencia: processo.Fatura || '',
+                exportador: processo.Cliente || '',
+                importador: processo.Importador || '',
+                recebimento: processo.DataCadastro || '',
+                chegada: processo.DataPrevisaoETA || '',
+                analista: processo.Analista || '',
+                destino: processo.Destino || '',
               };
 
               // Tenta criar ou obter existente
@@ -176,8 +168,8 @@ const Page = () => {
               if (needsUpdate) {
                 await updateOrquestra(existingOrquestra.$id, orquestraData);
               }
-            }
-          )
+            },
+          ),
         );
 
         if (!canceled) {
@@ -187,7 +179,7 @@ const Page = () => {
           setIsLoading(false);
         }
       } catch (err) {
-        console.error("Erro no polling:", err);
+        console.error('Erro no polling:', err);
         setIsLoading(false);
       }
     };
@@ -207,47 +199,42 @@ const Page = () => {
   // END USE EFFECT
 
   const isLiconferencia = (status: string) => {
-    return ["Conferindo", "Pendente", "FinalizadaLi"].includes(status);
+    return ['Conferindo', 'Pendente', 'FinalizadaLi'].includes(status);
   };
 
   const isOrquestra = (status: string) => {
-    return [
-      "Fazer Orquestra",
-      "Aguardando informação",
-      "Fazer Númerario",
-      "Em andamento",
-    ].includes(status);
+    return ['Fazer Orquestra', 'Aguardando informação', 'Fazer Númerario', 'Em andamento'].includes(
+      status,
+    );
   };
 
   const isFinalizados = (status: string) => {
-    return [
-      "Finalizado",
-    ].includes(status);
+    return ['Finalizado'].includes(status);
   };
 
   const isLIS = (status: string | null | undefined) => {
     return (
       status === null ||
       status === undefined ||
-      status === "" ||
-      status === "PendenteLi" ||
-      status === "Aguardando informaçãoLi" ||
-      status === "FazendoLi" ||
-      status === "Refazer"
+      status === '' ||
+      status === 'PendenteLi' ||
+      status === 'Aguardando informaçãoLi' ||
+      status === 'FazendoLi' ||
+      status === 'Refazer'
     );
   };
 
   const getFilteredByTab = () => {
-    if (activeTab === "lis") {
+    if (activeTab === 'lis') {
       return filteredOrquestra.filter((o) => isLIS(o.status));
     }
-    if (activeTab === "liconferencia") {
+    if (activeTab === 'liconferencia') {
       return sortedOrquestra.filter((o) => isLiconferencia(o.status));
     }
-    if (activeTab === "orquestra") {
+    if (activeTab === 'orquestra') {
       return sortedOrquestra.filter((o) => isOrquestra(o.status));
     }
-    if (activeTab === "finalizados") {
+    if (activeTab === 'finalizados') {
       return sortedOrquestra.filter((o) => isFinalizados(o.status));
     }
     return [];
@@ -257,28 +244,22 @@ const Page = () => {
     try {
       await updateOrquestraObs(imp, obs);
 
-      setOrquestra((prev) =>
-        prev.map((o) => (o.imp === imp ? { ...o, obs } : o))
-      );
+      setOrquestra((prev) => prev.map((o) => (o.imp === imp ? { ...o, obs } : o)));
 
-      setFilteredOrquestra((prev) =>
-        prev.map((o) => (o.imp === imp ? { ...o, obs } : o))
-      );
+      setFilteredOrquestra((prev) => prev.map((o) => (o.imp === imp ? { ...o, obs } : o)));
     } catch (error) {
-      console.error("Erro ao atualizar observação:", error);
+      console.error('Erro ao atualizar observação:', error);
     }
   };
 
   const currentData = getFilteredByTab();
   const showEmpty = !isLoading && currentData.length === 0;
 
-   const formatBRDate = (dateStr?: string) => {
-  if (!dateStr) return "-";
-  const date = new Date(dateStr + "T00:00:00");
-  return isNaN(date.getTime()) ? "-" : date.toLocaleDateString("pt-BR");
-};
-
-
+  const formatBRDate = (dateStr?: string) => {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr + 'T00:00:00');
+    return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('pt-BR');
+  };
 
   return (
     <div className="space-y-10 rounded-2xl bg-white p-8 shadow-md dark:border dark:border-white/20 dark:bg-zinc-900/80">
@@ -301,41 +282,41 @@ const Page = () => {
       {/* Abas estilo ClickUp */}
       <div className="flex items-center gap-2 border-b border-border pb-2">
         <button
-          onClick={() => setActiveTab("lis")}
+          onClick={() => setActiveTab('lis')}
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-            activeTab === "lis"
-              ? "bg-primary text-white shadow-sm dark:text-black"
-              : "text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]"
+            activeTab === 'lis'
+              ? 'bg-primary text-white shadow-sm dark:text-black'
+              : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
           }`}
         >
           LIS a fazer
         </button>
         <button
-          onClick={() => setActiveTab("liconferencia")}
+          onClick={() => setActiveTab('liconferencia')}
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-            activeTab === "liconferencia"
-              ? "bg-primary text-white shadow-sm dark:text-black"
-              : "text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]"
+            activeTab === 'liconferencia'
+              ? 'bg-primary text-white shadow-sm dark:text-black'
+              : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
           }`}
         >
           Conferência LI
         </button>
         <button
-          onClick={() => setActiveTab("orquestra")}
+          onClick={() => setActiveTab('orquestra')}
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-            activeTab === "orquestra"
-              ? "bg-primary text-white shadow-sm dark:text-black"
-              : "text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]"
+            activeTab === 'orquestra'
+              ? 'bg-primary text-white shadow-sm dark:text-black'
+              : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
           }`}
         >
           Orquestra
         </button>
         <button
-          onClick={() => setActiveTab("finalizados")}
+          onClick={() => setActiveTab('finalizados')}
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-            activeTab === "finalizados"
-              ? "bg-primary text-white shadow-sm dark:text-black"
-              : "text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]"
+            activeTab === 'finalizados'
+              ? 'bg-primary text-white shadow-sm dark:text-black'
+              : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
           }`}
         >
           Finalizados
@@ -363,11 +344,8 @@ const Page = () => {
                 <TableHead className="min-w-[100px]">Recebimento</TableHead>
                 <TableHead className="min-w-[100px]">Prev. Chegada</TableHead>
                 <TableHead className="min-w-[100px]">Destino</TableHead>
-                <TableHead
-                  className="min-w-[140px]"
-                  onClick={() => handleSort("status")}
-                >
-                  Status {sortDirection === "asc" ? "▲" : "▼"}
+                <TableHead className="min-w-[140px]" onClick={() => handleSort('status')}>
+                  Status {sortDirection === 'asc' ? '▲' : '▼'}
                 </TableHead>
                 <TableHead className="min-w-[100px]">Observação</TableHead>
               </TableRow>
@@ -375,22 +353,16 @@ const Page = () => {
             <TableBody>
               {currentData.map((item) => (
                 <TableRow key={item.imp}>
-                  <TableCell>{item.imp || "-"}</TableCell>
-                  <TableCell>{item.referencia || "-"}</TableCell>
+                  <TableCell>{item.imp || '-'}</TableCell>
+                  <TableCell>{item.referencia || '-'}</TableCell>
                   <TableCell>
-                    <span
-                      className="block max-w-[150px] truncate"
-                      title={item.exportador}
-                    >
-                      {item.exportador?.split(" ").slice(0, 8).join(" ") || "-"}
+                    <span className="block max-w-[150px] truncate" title={item.exportador}>
+                      {item.exportador?.split(' ').slice(0, 8).join(' ') || '-'}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span
-                      className="block max-w-[150px] truncate"
-                      title={item.importador}
-                    >
-                      {item.importador?.split(" ").slice(0, 8).join(" ") || "-"}
+                    <span className="block max-w-[150px] truncate" title={item.importador}>
+                      {item.importador?.split(' ').slice(0, 8).join(' ') || '-'}
                     </span>
                   </TableCell>
                   <TableCell>{formatBRDate(item.recebimento)}</TableCell>
@@ -398,92 +370,66 @@ const Page = () => {
                   <TableCell>
                     <Badge
                       className={`rounded-lg px-3 py-1 text-sm text-white ${
-                        ["navegantes", "itajai - sc"].includes(
-                          item.destino?.toLowerCase()
-                        )
-                          ? "bg-[#2ecc71]"
-                          : ["sao francisco", "itapoa - sc"].includes(
-                                item.destino?.toLowerCase()
-                              )
-                            ? "bg-[#e91e63]"
-                            : item.destino?.toLowerCase() === "santos"
-                              ? "bg-[#333333]"
-                              : "bg-[#7f8c8d]"
+                        ['navegantes', 'itajai - sc'].includes(item.destino?.toLowerCase())
+                          ? 'bg-[#2ecc71]'
+                          : ['sao francisco', 'itapoa - sc'].includes(item.destino?.toLowerCase())
+                            ? 'bg-[#e91e63]'
+                            : item.destino?.toLowerCase() === 'santos'
+                              ? 'bg-[#333333]'
+                              : 'bg-[#7f8c8d]'
                       }`}
                     >
-                      {item.destino || "-"}
+                      {item.destino || '-'}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Select
-                      value={item.status || "Pendente"}
-                      onValueChange={(value) =>
-                        handleStatusChange(item.imp, value)
-                      }
+                      value={item.status || 'Pendente'}
+                      onValueChange={(value) => handleStatusChange(item.imp, value)}
                     >
                       <SelectTrigger className="w-[130px] text-sm">
                         <SelectValue placeholder="Selecionar status" />
                       </SelectTrigger>
                       <SelectContent>
-                        {activeTab === "lis" && (
+                        {activeTab === 'lis' && (
                           <>
                             <SelectItem value="Refazer">Refazer Li</SelectItem>
                             <SelectItem value="Aguardando informaçãoLi">
                               Aguardando Informação
                             </SelectItem>
                             <SelectItem value="PendenteLi">Pendente</SelectItem>
-                            <SelectItem value="FazendoLi">
-                              Em Andamento
-                            </SelectItem>
+                            <SelectItem value="FazendoLi">Em Andamento</SelectItem>
 
                             {/* "Pendente" aqui move o processo para a aba "Conferência LI" */}
                             <SelectItem value="Pendente">Finalizado</SelectItem>
                           </>
                         )}
-                        {activeTab === "liconferencia" && (
+                        {activeTab === 'liconferencia' && (
                           <>
                             <SelectItem value="Refazer">Refazer Li</SelectItem>
                             <SelectItem value="Pendente">Pendente</SelectItem>
-                            <SelectItem value="Conferindo">
-                              Conferindo
-                            </SelectItem>
-                            <SelectItem value="Fazer Orquestra">
-                              Fazer Orquestra
-                            </SelectItem>
+                            <SelectItem value="Conferindo">Conferindo</SelectItem>
+                            <SelectItem value="Fazer Orquestra">Fazer Orquestra</SelectItem>
                           </>
                         )}
-                        {activeTab === "orquestra" && (
+                        {activeTab === 'orquestra' && (
                           <>
                             <SelectItem value="Refazer">Refazer LI</SelectItem>
                             <SelectItem value="Aguardando informação">
                               Aguardando Informação
                             </SelectItem>
-                            <SelectItem value="Em andamento">
-                              Em andamento
-                            </SelectItem>
-                            <SelectItem value="Fazer Orquestra">
-                              Fazer Orquestra
-                            </SelectItem>
-                            <SelectItem value="Fazer Númerario">
-                              Númerario
-                            </SelectItem>
-                            <SelectItem value="Finalizado">
-                              Finalizado
-                            </SelectItem>
+                            <SelectItem value="Em andamento">Em andamento</SelectItem>
+                            <SelectItem value="Fazer Orquestra">Fazer Orquestra</SelectItem>
+                            <SelectItem value="Fazer Númerario">Númerario</SelectItem>
+                            <SelectItem value="Finalizado">Finalizado</SelectItem>
                           </>
                         )}
-                        {activeTab === "finalizados" && (
+                        {activeTab === 'finalizados' && (
                           <>
                             <SelectItem value="Refazer">Refazer LI</SelectItem>
-                            <SelectItem value="Fazer Orquestra">
-                              Fazer Orquestra
-                            </SelectItem>
-                            <SelectItem value="Fazer Númerario">
-                              Númerario
-                            </SelectItem>
-                            <SelectItem value="Finalizado">
-                              Finalizado
-                            </SelectItem>
+                            <SelectItem value="Fazer Orquestra">Fazer Orquestra</SelectItem>
+                            <SelectItem value="Fazer Númerario">Númerario</SelectItem>
+                            <SelectItem value="Finalizado">Finalizado</SelectItem>
                           </>
                         )}
                       </SelectContent>
@@ -491,18 +437,14 @@ const Page = () => {
                   </TableCell>
                   <TableCell>
                     <Textarea
-                      value={item.obs || ""}
+                      value={item.obs || ''}
                       onChange={(e) => {
                         const novoObs = e.target.value;
                         setOrquestra((prev) =>
-                          prev.map((o) =>
-                            o.imp === item.imp ? { ...o, obs: novoObs } : o
-                          )
+                          prev.map((o) => (o.imp === item.imp ? { ...o, obs: novoObs } : o)),
                         );
                         setFilteredOrquestra((prev) =>
-                          prev.map((o) =>
-                            o.imp === item.imp ? { ...o, obs: novoObs } : o
-                          )
+                          prev.map((o) => (o.imp === item.imp ? { ...o, obs: novoObs } : o)),
                         );
                       }}
                       onBlur={(e) => handleObsChange(item.imp, e.target.value)}
