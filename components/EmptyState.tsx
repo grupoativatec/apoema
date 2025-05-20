@@ -5,7 +5,7 @@ import successLis from "../public/animations/success.json";
 import successLiconferencia from "../public/animations/successLiconferencia.json";
 
 interface EmptyStateProps {
-  tab: "lis" | "liconferencia" | "orquestra";
+  tab: "lis" | "liconferencia" | "orquestra" | "finalizados";
 }
 
 const messagesByTab: Record<EmptyStateProps["tab"], string[]> = {
@@ -24,12 +24,18 @@ const messagesByTab: Record<EmptyStateProps["tab"], string[]> = {
     "Tudo orquestrado com maestria! 🎻",
     "Processos finalizados. Respire fundo. 🌿",
   ],
+   finalizados: [
+    "Nada pendente na orquestra. 🎼",
+    "Tudo orquestrado com maestria! 🎻",
+    "Processos finalizados. Respire fundo. 🌿",
+  ],
 };
 
 const animationsByTab: Record<EmptyStateProps["tab"], object> = {
   lis: successLis,
   liconferencia: successLiconferencia,
   orquestra: successLiconferencia,
+  finalizados: successLiconferencia,
 };
 
 export default function EmptyState({ tab }: EmptyStateProps) {

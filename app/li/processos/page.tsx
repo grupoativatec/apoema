@@ -37,7 +37,7 @@ const Page = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [activeTab, setActiveTab] = useState<
-    "lis" | "orquestra" | "liconferencia"
+    "lis" | "orquestra" | "liconferencia"  | "finalizados"
   >("lis");
   const [sortField, setSortField] = useState("status");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -216,6 +216,11 @@ const Page = () => {
       "Aguardando informação",
       "Fazer Númerario",
       "Em andamento",
+    ].includes(status);
+  };
+
+  const isFinalizados = (status: string) => {
+    return [
       "Finalizado",
     ].includes(status);
   };
@@ -242,6 +247,9 @@ const Page = () => {
     if (activeTab === "orquestra") {
       return sortedOrquestra.filter((o) => isOrquestra(o.status));
     }
+    if (activeTab === "finalizados") {
+      return sortedOrquestra.filter((o) => isFinalizados(o.status));
+    }
     return [];
   };
 
@@ -263,6 +271,14 @@ const Page = () => {
 
   const currentData = getFilteredByTab();
   const showEmpty = !isLoading && currentData.length === 0;
+
+   const formatBRDate = (dateStr?: string) => {
+      if (!dateStr) return "-";
+      const date = new Date(dateStr);
+      // Se precisar forçar UTC (caso haja diferença de fuso), adicione timeZone: 'UTC'
+      return date.toLocaleDateString("pt-BR");
+    };
+
 
   return (
     <div className="space-y-10 rounded-2xl bg-white p-8 shadow-md dark:border dark:border-white/20 dark:bg-zinc-900/80">
@@ -313,6 +329,16 @@ const Page = () => {
           }`}
         >
           Orquestra
+        </button>
+        <button
+          onClick={() => setActiveTab("finalizados")}
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+            activeTab === "finalizados"
+              ? "bg-primary text-white shadow-sm dark:text-black"
+              : "text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]"
+          }`}
+        >
+          Finalizados
         </button>
       </div>
 
@@ -367,8 +393,8 @@ const Page = () => {
                       {item.importador?.split(" ").slice(0, 8).join(" ") || "-"}
                     </span>
                   </TableCell>
-                  <TableCell>{item.recebimento || "-"}</TableCell>
-                  <TableCell>{item.chegada || "-"}</TableCell>
+                  <TableCell>{formatBRDate(item.recebimento)}</TableCell>
+                  <TableCell>{formatBRDate(item.chegada)}</TableCell>
                   <TableCell>
                     <Badge
                       className={`rounded-lg px-3 py-1 text-sm text-white ${
@@ -435,6 +461,20 @@ const Page = () => {
                             <SelectItem value="Em andamento">
                               Em andamento
                             </SelectItem>
+                            <SelectItem value="Fazer Orquestra">
+                              Fazer Orquestra
+                            </SelectItem>
+                            <SelectItem value="Fazer Númerario">
+                              Númerario
+                            </SelectItem>
+                            <SelectItem value="Finalizado">
+                              Finalizado
+                            </SelectItem>
+                          </>
+                        )}
+                        {activeTab === "finalizados" && (
+                          <>
+                            <SelectItem value="Refazer">Refazer LI</SelectItem>
                             <SelectItem value="Fazer Orquestra">
                               Fazer Orquestra
                             </SelectItem>
