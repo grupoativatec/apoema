@@ -273,11 +273,11 @@ const Page = () => {
   const showEmpty = !isLoading && currentData.length === 0;
 
    const formatBRDate = (dateStr?: string) => {
-      if (!dateStr) return "-";
-      const date = new Date(dateStr);
-      // Se precisar forçar UTC (caso haja diferença de fuso), adicione timeZone: 'UTC'
-      return date.toLocaleDateString("pt-BR");
-    };
+  if (!dateStr) return "-";
+  const date = new Date(dateStr + "T00:00:00");
+  return isNaN(date.getTime()) ? "-" : date.toLocaleDateString("pt-BR");
+};
+
 
 
   return (
