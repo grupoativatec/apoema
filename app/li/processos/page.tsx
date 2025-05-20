@@ -68,22 +68,28 @@ const Page = () => {
 
   const handleStatusChange = async (imp: string, novoStatus: string) => {
     try {
+      let dataFinalizacao: string | undefined = undefined;
+
+      if (novoStatus === 'Finalizado') {
+        dataFinalizacao = new Date().toISOString().slice(0, 10);
+      }
+
       // Atualizar o status no banco de dados
-      await updateOrquestraStatus(imp, novoStatus);
+      await updateOrquestraStatus(imp, novoStatus, dataFinalizacao);
 
       // Atualizar o estado localmente
       setOrquestra((prevOrquestras) =>
         prevOrquestras.map((orquestra) =>
           orquestra.imp === imp
-            ? { ...orquestra, status: novoStatus } // Atualiza o status
+            ? { ...orquestra, status: novoStatus, dataFinalizacao } // Atualiza o status e dataFinalizacao
             : orquestra,
         ),
       );
 
-      // Se necessário, também atualize o `filteredOrquestra`
+      // Atualizar filteredOrquestra
       setFilteredOrquestra((prevFiltered) =>
         prevFiltered.map((orquestra) =>
-          orquestra.imp === imp ? { ...orquestra, status: novoStatus } : orquestra,
+          orquestra.imp === imp ? { ...orquestra, status: novoStatus, dataFinalizacao } : orquestra,
         ),
       );
     } catch (error) {

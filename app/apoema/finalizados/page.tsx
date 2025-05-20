@@ -185,6 +185,7 @@ const Page = () => {
               <TableHead onClick={() => handleSort('chegada')} className="cursor-pointer">
                 Prev. Chegada{getArrow('chegada')}
               </TableHead>
+              <TableHead>Finalizado em</TableHead>
               <TableHead>Destino</TableHead>
             </TableRow>
           </TableHeader>
@@ -220,6 +221,8 @@ const Page = () => {
                   </TableCell>
                   <TableCell>{formatDateBR(item.recebimento)}</TableCell>
                   <TableCell>{formatDateBR(item.chegada)}</TableCell>
+                  <TableCell>{formatDateBR(item.dataFinalizacao)}</TableCell>
+
                   <TableCell>
                     <Badge
                       className={`rounded-lg px-3 py-1 text-sm text-white ${
