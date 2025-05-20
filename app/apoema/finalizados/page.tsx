@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useTheme } from "next-themes";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { useEffect, useState } from 'react';
+import { useTheme } from 'next-themes';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -12,25 +12,23 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
-import { getOrquestrasFinalizadas } from "@/lib/actions/orquestra.actions";
+} from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+import { getOrquestrasFinalizadas } from '@/lib/actions/orquestra.actions';
 
 function parseBrazilianDate(dateStr: string): Date {
-  const [day, month, year] = dateStr.split("/");
+  const [day, month, year] = dateStr.split('/');
   return new Date(`${year}-${month}-${day}`);
 }
 
 const Page = () => {
   const [orquestras, setOrquestras] = useState<any[]>([]);
   const [analysts, setAnalysts] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<string>("Todos");
+  const [activeTab, setActiveTab] = useState<string>('Todos');
   const [filteredOrquestras, setFilteredOrquestras] = useState<any[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortField, setSortField] = useState<"recebimento" | "chegada">(
-    "recebimento"
-  );
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState<'recebimento' | 'chegada'>('recebimento');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [isLoading, setIsLoading] = useState(true);
 
   const { theme, setTheme } = useTheme();
@@ -57,12 +55,12 @@ const Page = () => {
         new Set(
           sorted
             .map((item) => item.analista)
-            .filter((a) => typeof a === "string" && a.trim() !== "")
-        )
+            .filter((a) => typeof a === 'string' && a.trim() !== ''),
+        ),
       );
 
       setAnalysts(uniqueAnalysts);
-      setActiveTab("Todos"); // Aba padrão
+      setActiveTab('Todos'); // Aba padrão
       setIsLoading(false);
     };
 
@@ -73,19 +71,19 @@ const Page = () => {
     let data = [...orquestras];
 
     // Filtro por analista
-    if (activeTab !== "Todos") {
+    if (activeTab !== 'Todos') {
       data = data.filter((item) => item.analista === activeTab);
     }
 
     // Filtro por busca
     if (searchTerm) {
-      const term = searchTerm.toLowerCase().replace(/\s+/g, "");
-      const normalize = (str = "") => str.toLowerCase().replace(/\s+/g, "");
+      const term = searchTerm.toLowerCase().replace(/\s+/g, '');
+      const normalize = (str = '') => str.toLowerCase().replace(/\s+/g, '');
 
       data = data.filter((item) =>
-        [item.imp, item.referencia, item.importador, item.exportador].some(
-          (field) => normalize(field).includes(term)
-        )
+        [item.imp, item.referencia, item.importador, item.exportador].some((field) =>
+          normalize(field).includes(term),
+        ),
       );
     }
 
@@ -93,7 +91,7 @@ const Page = () => {
     data.sort((a, b) => {
       const dateA = parseBrazilianDate(a[sortField]);
       const dateB = parseBrazilianDate(b[sortField]);
-      return sortDirection === "asc"
+      return sortDirection === 'asc'
         ? dateA.getTime() - dateB.getTime()
         : dateB.getTime() - dateA.getTime();
     });
@@ -105,18 +103,24 @@ const Page = () => {
     setSearchTerm(e.target.value);
   };
 
-  const handleSort = (field: "recebimento" | "chegada") => {
-    const direction =
-      sortField === field && sortDirection === "asc" ? "desc" : "asc";
+  const handleSort = (field: 'recebimento' | 'chegada') => {
+    const direction = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';
     setSortField(field);
     setSortDirection(direction);
   };
 
   const getArrow = (field: string) => {
     if (sortField === field) {
-      return sortDirection === "asc" ? " ▲" : " ▼";
+      return sortDirection === 'asc' ? ' ▲' : ' ▼';
     }
-    return " ▲▼";
+    return ' ▲▼';
+  };
+
+  const formatDateBR = (dateStr?: string) => {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return 'Data inválida';
+    return date.toLocaleDateString('pt-BR');
   };
 
   return (
@@ -125,14 +129,14 @@ const Page = () => {
         <h1 className="text-3xl font-bold">Processos Finalizados</h1>
         {mounted && (
           <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-              theme === "dark"
-                ? "text-white dark:bg-zinc-800"
-                : "bg-zinc-100 text-muted-foreground hover:bg-muted"
+              theme === 'dark'
+                ? 'text-white dark:bg-zinc-800'
+                : 'bg-zinc-100 text-muted-foreground hover:bg-muted'
             }`}
           >
-            {theme === "dark" ? "☀️ Tema Claro" : "🌙 Tema Escuro"}
+            {theme === 'dark' ? '☀️ Tema Claro' : '🌙 Tema Escuro'}
           </button>
         )}
       </div>
@@ -151,14 +155,14 @@ const Page = () => {
 
       {/* Abas com "Todos" + analistas */}
       <div className="flex flex-wrap items-center gap-2 border-b border-border pb-2">
-        {["Todos", ...analysts].map((analista) => (
+        {['Todos', ...analysts].map((analista) => (
           <button
             key={analista}
             onClick={() => setActiveTab(analista)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
               activeTab === analista
-                ? "bg-primary text-white shadow-sm dark:text-black"
-                : "text-muted-foreground hover:bg-muted"
+                ? 'bg-primary text-white shadow-sm dark:text-black'
+                : 'text-muted-foreground hover:bg-muted'
             }`}
           >
             {analista}
@@ -175,17 +179,11 @@ const Page = () => {
               <TableHead>Ref. Cliente</TableHead>
               <TableHead>Exportador</TableHead>
               <TableHead>Importador</TableHead>
-              <TableHead
-                onClick={() => handleSort("recebimento")}
-                className="cursor-pointer"
-              >
-                Recebimento{getArrow("recebimento")}
+              <TableHead onClick={() => handleSort('recebimento')} className="cursor-pointer">
+                Recebimento{getArrow('recebimento')}
               </TableHead>
-              <TableHead
-                onClick={() => handleSort("chegada")}
-                className="cursor-pointer"
-              >
-                Prev. Chegada{getArrow("chegada")}
+              <TableHead onClick={() => handleSort('chegada')} className="cursor-pointer">
+                Prev. Chegada{getArrow('chegada')}
               </TableHead>
               <TableHead>Destino</TableHead>
             </TableRow>
@@ -205,39 +203,36 @@ const Page = () => {
               ))
             ) : filteredOrquestras.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="text-center text-muted-foreground"
-                >
+                <TableCell colSpan={7} className="text-center text-muted-foreground">
                   Nenhuma IMP encontrada.
                 </TableCell>
               </TableRow>
             ) : (
               filteredOrquestras.map((item) => (
-                <TableRow key={`row-${item.imp}`}>
-                  <TableCell>{item.imp || "-"}</TableCell>
-                  <TableCell>{item.referencia || "-"}</TableCell>
-                  <TableCell>{item.exportador || "-"}</TableCell>
-                  <TableCell>{item.importador || "-"}</TableCell>
-                  <TableCell>{item.recebimento || "-"}</TableCell>
-                  <TableCell>{item.chegada || "-"}</TableCell>
+                <TableRow key={`row-${item.imp}`} className="font-sans">
+                  <TableCell>{item.imp || '-'}</TableCell>
+                  <TableCell>{item.referencia || '-'}</TableCell>
+                  <TableCell className="max-w-[150px] truncate" title={item.exportador}>
+                    {item.exportador || '-'}
+                  </TableCell>
+                  <TableCell className="max-w-[150px] truncate" title={item.importador}>
+                    {item.importador || '-'}
+                  </TableCell>
+                  <TableCell>{formatDateBR(item.recebimento)}</TableCell>
+                  <TableCell>{formatDateBR(item.chegada)}</TableCell>
                   <TableCell>
                     <Badge
                       className={`rounded-lg px-3 py-1 text-sm text-white ${
-                        ["navegantes", "itajai - sc"].includes(
-                          item.destino?.toLowerCase()
-                        )
-                          ? "bg-[#2ecc71]"
-                          : ["sao francisco", "itapoa - sc"].includes(
-                                item.destino?.toLowerCase()
-                              )
-                            ? "bg-[#e91e63]"
-                            : item.destino?.toLowerCase() === "santos"
-                              ? "bg-[#333333]"
-                              : "bg-[#7f8c8d]"
+                        ['navegantes', 'itajai - sc'].includes(item.destino?.toLowerCase())
+                          ? 'bg-[#2ecc71]'
+                          : ['sao francisco', 'itapoa - sc'].includes(item.destino?.toLowerCase())
+                            ? 'bg-[#e91e63]'
+                            : item.destino?.toLowerCase() === 'santos'
+                              ? 'bg-[#333333]'
+                              : 'bg-[#7f8c8d]'
                       }`}
                     >
-                      {item.destino || "-"}
+                      {item.destino || '-'}
                     </Badge>
                   </TableCell>
                 </TableRow>
