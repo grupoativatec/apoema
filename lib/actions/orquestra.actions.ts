@@ -7,6 +7,25 @@ import { appwriteConfig } from "@/lib/appwrite/config";
 import { ID, Query } from "node-appwrite";
 import { pool } from "../database/db";
 
+const normalizeDateToISO = (dateStr: string) => {
+  if (!dateStr) return "";
+
+  // Já está em formato ISO (YYYY-MM-DD)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return dateStr;
+  }
+
+  // Está em formato brasileiro (DD/MM/YYYY)
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+    const [day, month, year] = dateStr.split("/");
+    return `${year}-${month}-${day}`;
+  }
+
+  // Formato inválido
+  return "";
+};
+
+
 // CREATE
 export const createOrquestra = async (data: {
   imp: string;
@@ -39,8 +58,8 @@ export const createOrquestra = async (data: {
         data.referencia,
         data.exportador,
         data.importador,
-        data.recebimento,
-        data.chegada,
+        normalizeDateToISO(data.recebimento),
+        normalizeDateToISO(data.chegada),
         data.destino,
         status,
         data.analista,
