@@ -229,3 +229,24 @@ export const getOrquestrasFinalizadas = async () => {
     throw error;
   }
 };
+
+export const getQuantidadeProcessosLiPorStatus = async () => {
+  try {
+    const [rows]: any = await pool.query(`
+      SELECT
+        COUNT(CASE WHEN status = 'PendenteLi' THEN 1 END) AS pendentes,
+        COUNT(CASE WHEN status != 'Finalizado' THEN 1 END) AS emAndamento,
+        COUNT(CASE WHEN status = 'Finalizado' THEN 1 END) AS concluidos
+      FROM processos;
+    `);
+
+    return {
+      pendentes: rows[0].pendentes,
+      emAndamento: rows[0].emAndamento,
+      concluidos: rows[0].concluidos,
+    };
+  } catch (error) {
+    console.error('Erro ao buscar contagem de processos Li por status:', error);
+    throw error;
+  }
+};

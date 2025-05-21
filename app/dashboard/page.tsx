@@ -1,6 +1,17 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 import React, { useEffect, useState } from 'react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Label,
+  LabelList,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  XAxis,
+} from 'recharts';
 
 import {
   CheckCircleIcon,
@@ -17,6 +28,10 @@ import {
 } from '@/lib/actions/li.actions';
 import { FaCheckCircle, FaClock, FaThumbsUp } from 'react-icons/fa';
 import { Skeleton } from '@/components/ui/skeleton';
+
+import { ChartConfig } from '@/components/ui/chart';
+import { TotalProcessos } from '@/components/ui/pier-chart';
+import { TopProdutosChart } from '@/components/ui/bar-chart';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 10 },
@@ -37,6 +52,60 @@ const Home = () => {
   const [quantidadeLicencasEmAnalise, setQuantidadeLicencasEmAnalise] = useState<number>(0);
   const [quantidadeLicencasDeferidas, setQuantidadeLicencasDeferidas] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+
+  const chartData = [
+    { browser: 'chrome', visitors: 275, fill: 'var(--color-chrome)' },
+    { browser: 'safari', visitors: 200, fill: 'var(--color-safari)' },
+    { browser: 'firefox', visitors: 287, fill: 'var(--color-firefox)' },
+    { browser: 'edge', visitors: 173, fill: 'var(--color-edge)' },
+    { browser: 'other', visitors: 190, fill: 'var(--color-other)' },
+  ];
+
+  const chartData2 = [
+    { month: 'January', desktop: 186 },
+    { month: 'February', desktop: 305 },
+    { month: 'March', desktop: 237 },
+    { month: 'April', desktop: 73 },
+    { month: 'May', desktop: 209 },
+    { month: 'June', desktop: 214 },
+  ];
+
+  const chartConfig = {
+    visitors: {
+      label: 'Visitors',
+    },
+    chrome: {
+      label: 'Chrome',
+      color: 'hsl(var(--chart-1))',
+    },
+    safari: {
+      label: 'Safari',
+      color: 'hsl(var(--chart-2))',
+    },
+    firefox: {
+      label: 'Firefox',
+      color: 'hsl(var(--chart-3))',
+    },
+    edge: {
+      label: 'Edge',
+      color: 'hsl(var(--chart-4))',
+    },
+    other: {
+      label: 'Other',
+      color: 'hsl(var(--chart-5))',
+    },
+  } satisfies ChartConfig;
+
+  const chartConfig2 = {
+    desktop: {
+      label: 'Desktop',
+      color: 'hsl(var(--chart-1))',
+    },
+  } satisfies ChartConfig;
+
+  const totalVisitors = React.useMemo(() => {
+    return chartData.reduce((acc, curr) => acc + curr.visitors, 0);
+  }, []);
 
   useEffect(() => {
     const fetchLicencas = async () => {
@@ -192,6 +261,15 @@ const Home = () => {
                 <div>{item.icon}</div>
               </motion.div>
             ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-4 ">
+        <div className="w-full">
+          <TotalProcessos />
+        </div>
+        <div className="w-full">
+          <TopProdutosChart />
+        </div>
       </div>
 
       {/* Tabela de Licenças */}
