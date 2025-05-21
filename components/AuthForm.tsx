@@ -77,7 +77,11 @@ const AuthForm = ({ type }: { type: FormType }) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="auth-form">
-        <h1 className="form-title">{type === 'sign-in' ? 'Fazer login' : 'Criar conta'}</h1>
+        <div className="text-center flex items-center justify-center">
+          <h1 className="form-title text-center">
+            {type === 'sign-in' ? 'Fazer login' : 'Criar conta'}
+          </h1>
+        </div>
 
         {type === 'sign-up' && (
           <FormField
