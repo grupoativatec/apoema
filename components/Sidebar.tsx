@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,6 +10,7 @@ import Image from 'next/image';
 import { SIDENAV_ITEMS } from '../constants/links';
 import { SideNavItem } from '../constants/types';
 import { signOutUser } from '@/lib/actions/user.actions';
+import { useTheme } from 'next-themes';
 
 interface Props {
   name: string;
@@ -19,6 +20,18 @@ interface Props {
 }
 
 const Sidebar = ({ name, avatar }: Props) => {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  const logoSrc = theme === 'dark' ? '/apoema-light.png' : '/apoema-dark.png';
+  const brandIcon = theme === 'dark' ? '/brand-light.png' : '/brand-dark.png';
+
   return (
     <div className="fixed hidden h-screen w-52 border-r border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900 md:flex">
       <div className="flex size-full flex-col">
@@ -27,8 +40,8 @@ const Sidebar = ({ name, avatar }: Props) => {
           href="/dashboard"
           className="flex h-16 items-center space-x-3 border-b border-zinc-200 px-6 dark:border-zinc-700"
         >
-          <Image src="/brand.png" alt="" width={40} height={40} />
-          <span className="text-lg font-semibold tracking-tight dark:text-white">VaultCloud</span>
+          <Image src={brandIcon} alt="Brand" width={40} height={40} />
+          <Image src={logoSrc} alt="Logo Apoema" width={90} height={90} />
         </Link>
 
         {/* Menu */}
