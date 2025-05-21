@@ -345,7 +345,7 @@ const Page = () => {
               <TableRow>
                 <TableHead className="min-w-[100px]">Imp</TableHead>
                 <TableHead className="min-w-[100px]">Ref. Cliente</TableHead>
-                <TableHead className="min-w-[100px]">Exportador</TableHead>
+                <TableHead className="min-w-[100px]">Adquirente</TableHead>
                 <TableHead className="min-w-[100px]">Importador</TableHead>
                 <TableHead className="min-w-[100px]">Recebimento</TableHead>
                 <TableHead className="min-w-[100px]">Prev. Chegada</TableHead>
