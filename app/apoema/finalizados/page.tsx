@@ -27,7 +27,10 @@ const Page = () => {
   const [activeTab, setActiveTab] = useState<string>('Todos');
   const [filteredOrquestras, setFilteredOrquestras] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortField, setSortField] = useState<'recebimento' | 'chegada'>('recebimento');
+  const [sortField, setSortField] = useState<'recebimento' | 'chegada' | 'dataFinalizacao'>(
+    'dataFinalizacao',
+  );
+
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -89,8 +92,11 @@ const Page = () => {
 
     // Ordenação
     data.sort((a, b) => {
-      const dateA = parseBrazilianDate(a[sortField]);
-      const dateB = parseBrazilianDate(b[sortField]);
+      const dateA =
+        sortField === 'dataFinalizacao' ? new Date(a[sortField]) : parseBrazilianDate(a[sortField]);
+      const dateB =
+        sortField === 'dataFinalizacao' ? new Date(b[sortField]) : parseBrazilianDate(b[sortField]);
+
       return sortDirection === 'asc'
         ? dateA.getTime() - dateB.getTime()
         : dateB.getTime() - dateA.getTime();
@@ -103,7 +109,7 @@ const Page = () => {
     setSearchTerm(e.target.value);
   };
 
-  const handleSort = (field: 'recebimento' | 'chegada') => {
+  const handleSort = (field: 'recebimento' | 'chegada' | 'dataFinalizacao') => {
     const direction = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';
     setSortField(field);
     setSortDirection(direction);
@@ -116,11 +122,26 @@ const Page = () => {
     return ' ▲▼';
   };
 
-  const formatDateBR = (dateStr?: string) => {
+  const formatDateBR = (dateStr?: any) => {
     if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return 'Data inválida';
-    return date.toLocaleDateString('pt-BR');
+
+    let parsedDate: Date;
+
+    try {
+      if (typeof dateStr === 'string') {
+        // Corrige o formato inválido "2025-05-20:00000000"
+        const fixed = dateStr.replace(':', 'T').substring(0, 19); // "2025-05-20T00:00:00"
+        parsedDate = new Date(fixed);
+      } else {
+        parsedDate = new Date(dateStr);
+      }
+
+      if (isNaN(parsedDate.getTime())) return 'Data inválida';
+
+      return parsedDate.toLocaleDateString('pt-BR');
+    } catch {
+      return 'Data inválida';
+    }
   };
 
   return (
@@ -185,7 +206,9 @@ const Page = () => {
               <TableHead onClick={() => handleSort('chegada')} className="cursor-pointer">
                 Prev. Chegada{getArrow('chegada')}
               </TableHead>
-              <TableHead>Finalizado em</TableHead>
+              <TableHead onClick={() => handleSort('dataFinalizacao')} className="cursor-pointer">
+                Finalizado em{getArrow('dataFinalizacao')}
+              </TableHead>
               <TableHead>Destino</TableHead>
             </TableRow>
           </TableHeader>
