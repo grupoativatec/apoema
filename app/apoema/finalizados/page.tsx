@@ -177,7 +177,7 @@ const Page = () => {
             <TableRow>
               <TableHead>Imp</TableHead>
               <TableHead>Ref. Cliente</TableHead>
-              <TableHead>Exportador</TableHead>
+              <TableHead>Adquirente</TableHead>
               <TableHead>Importador</TableHead>
               <TableHead onClick={() => handleSort('recebimento')} className="cursor-pointer">
                 Recebimento{getArrow('recebimento')}
