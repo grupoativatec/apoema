@@ -41,33 +41,44 @@ export function TopProdutosChart() {
   } satisfies ChartConfig;
 
   useEffect(() => {
-    const cache = Cookies.get('topProdutosCache');
-    if (cache) {
-      try {
-        const produtos = JSON.parse(cache) as Produto[];
-        setData(produtos);
-        setLoading(false);
-        return;
-      } catch {
-        console.error('Erro ao ler o cache de produtos');
+    const fetchData = () => {
+      const cache = Cookies.get('topProdutosCache');
+      if (cache) {
+        try {
+          const produtos = JSON.parse(cache) as Produto[];
+          setData(produtos);
+          setLoading(false);
+          return;
+        } catch {
+          console.error('Erro ao ler o cache de produtos');
+        }
       }
-    }
 
-    fetch('/api/top-produtos')
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((json: Produto[]) => {
-        setData(json);
-        Cookies.set('topProdutosCache', JSON.stringify(json), { expires: 1 });
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setError('Não foi possível carregar os dados.');
-        setLoading(false);
-      });
+      fetch('/api/top-produtos')
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then((json: Produto[]) => {
+          setData(json);
+          Cookies.set('topProdutosCache', JSON.stringify(json), { expires: 1 });
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error(err);
+          setError('Não foi possível carregar os dados.');
+          setLoading(false);
+        });
+    };
+
+    // Inicializa os dados
+    fetchData();
+
+    // Atualiza os dados a cada 10 minutos (600000ms)
+    const intervalId = setInterval(fetchData, 600000);
+
+    // Cleanup do intervalo ao desmontar o componente
+    return () => clearInterval(intervalId);
   }, []);
 
   if (loading) {
