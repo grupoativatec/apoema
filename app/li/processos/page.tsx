@@ -36,9 +36,9 @@ const Page = () => {
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'lis' | 'orquestra' | 'liconferencia' | 'finalizados'>(
-    'lis',
-  );
+  const [activeTab, setActiveTab] = useState<
+    'lis' | 'orquestra' | 'liconferencia' | 'numerario' | 'finalizados'
+  >('lis');
   const [sortField, setSortField] = useState('status');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -209,9 +209,11 @@ const Page = () => {
   };
 
   const isOrquestra = (status: string) => {
-    return ['Fazer Orquestra', 'Aguardando informação', 'Fazer Númerario', 'Em andamento'].includes(
-      status,
-    );
+    return ['Fazer Orquestra', 'Aguardando informação', 'Em andamento'].includes(status);
+  };
+
+  const isNumerario = (status: string) => {
+    return ['Fazer Númerario'].includes(status);
   };
 
   const isFinalizados = (status: string) => {
@@ -239,6 +241,9 @@ const Page = () => {
     }
     if (activeTab === 'orquestra') {
       return sortedOrquestra.filter((o) => isOrquestra(o.status));
+    }
+    if (activeTab === 'numerario') {
+      return sortedOrquestra.filter((o) => isNumerario(o.status));
     }
     if (activeTab === 'finalizados') {
       return sortedOrquestra.filter((o) => isFinalizados(o.status));
@@ -316,6 +321,16 @@ const Page = () => {
           }`}
         >
           Orquestra
+        </button>
+        <button
+          onClick={() => setActiveTab('numerario')}
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+            activeTab === 'numerario'
+              ? 'bg-primary text-white shadow-sm dark:text-black'
+              : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
+          }`}
+        >
+          Númerario
         </button>
         <button
           onClick={() => setActiveTab('finalizados')}
@@ -420,21 +435,30 @@ const Page = () => {
                         )}
                         {activeTab === 'orquestra' && (
                           <>
+                            <SelectItem value="Fazer Orquestra">Fazer Orquestra</SelectItem>
                             <SelectItem value="Refazer">Refazer LI</SelectItem>
                             <SelectItem value="Aguardando informação">
                               Aguardando Informação
                             </SelectItem>
                             <SelectItem value="Em andamento">Em andamento</SelectItem>
-                            <SelectItem value="Fazer Orquestra">Fazer Orquestra</SelectItem>
-                            <SelectItem value="Fazer Númerario">Númerario</SelectItem>
+                            {/* "Pendente" aqui move o processo para a aba "Fazer Númerario" */}
+                            <SelectItem value="Fazer Númerario">Finalizado</SelectItem>
+                          </>
+                        )}
+                        {activeTab === 'numerario' && (
+                          <>
+                            <SelectItem value="Fazer Númerario">Fazer Númerario</SelectItem>
+                            <SelectItem value="Refazer">Refazer LI</SelectItem>
+                            <SelectItem value="Fazer Orquestra">Refazer Orquestra</SelectItem>
+                            <SelectItem value="Em andamento">Em andamento</SelectItem>
                             <SelectItem value="Finalizado">Finalizado</SelectItem>
                           </>
                         )}
                         {activeTab === 'finalizados' && (
                           <>
                             <SelectItem value="Refazer">Refazer LI</SelectItem>
-                            <SelectItem value="Fazer Orquestra">Fazer Orquestra</SelectItem>
-                            <SelectItem value="Fazer Númerario">Númerario</SelectItem>
+                            <SelectItem value="Fazer Orquestra">Refazer Orquestra</SelectItem>
+                            <SelectItem value="Fazer Númerario">Refazer Númerario</SelectItem>
                             <SelectItem value="Finalizado">Finalizado</SelectItem>
                           </>
                         )}
