@@ -49,6 +49,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 const formatarDataBrasileira = (data: string | Date): string => {
   if (!data) return '';
@@ -89,6 +90,7 @@ const formatarDataInternacional = (data: string) => {
 const Page = () => {
   const [data, setData] = useState<any[] | null>(null);
   const [isLoading, setIsLoading] = useState(true); // Estado de carregamento
+  const { toast } = useToast();
 
   const [form, setForm] = useState({
     imp: '',
@@ -114,6 +116,75 @@ const Page = () => {
     return formatarDataBrasileira(iso);
   };
 
+  const verificarEAtualizarDeferidas = async (licencas: any[]) => {
+    const normalizarNumeroLI = (valor: string): string => {
+      return valor.replace(/\D/g, '');
+    };
+
+    try {
+      const response = await fetch('/api/li-deferidas', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Cn53OKGD6t5wyIlylTTn91A_ZWzne1TcQKuYycuhVoCZ4Q2nICni2L3VBChnhIaN4',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) throw new Error('Erro ao buscar dados das LIs deferidas.');
+
+      const { dados: deferidas = [] } = await response.json();
+
+      const licencasAtualizadas = licencas.map((li) => {
+        const encontrada = deferidas.find(
+          (d: any) =>
+            d.IMP === li.imp &&
+            normalizarNumeroLI(d.NumeroLI) === normalizarNumeroLI(li.numeroLi) &&
+            d.StatusSiscomex === 'DEFERIDA',
+        );
+
+        if (encontrada && li.situacao.toLowerCase() !== 'deferida') {
+          return { ...li, situacao: 'deferida', precisaAtualizar: true };
+        }
+        return li;
+      });
+
+      const deferidasAtualizadas = licencasAtualizadas.filter((li) => li.precisaAtualizar);
+
+      const atualizacoes = licencasAtualizadas
+        .filter((li) => li.precisaAtualizar)
+        .map((li) =>
+          updateLicencaImportacao(Number(li.licencaimportacaoid), {
+            ...li,
+            numeroOrquestra: parseInt(li.numeroOrquestra, 10) || 0,
+            dataRegistroLI: formatarDataInternacional(li.dataRegistroLI),
+            dataInclusaoOrquestra: formatarDataInternacional(li.dataInclusaoOrquestra),
+            previsaoDeferimento: formatarDataInternacional(li.previsaoDeferimento),
+            situacao: 'deferida',
+            observacoes: li.observacoes,
+          }),
+        );
+
+      await Promise.all(atualizacoes);
+
+      setData(
+        licencasAtualizadas.map((li) => {
+          const { precisaAtualizar, ...rest } = li;
+          return rest;
+        }),
+      );
+
+      if (deferidasAtualizadas.length > 0) {
+        toast({
+          title: 'Licenças deferidas',
+          description: `${deferidasAtualizadas.length} licença(s) foram atualizadas com sucesso para o status DEFERIDA.`,
+        });
+      }
+    } catch (err) {
+      console.error('Erro ao verificar LIs deferidas:', err);
+    }
+  };
+
   useEffect(() => {
     const fetchLicencas = async () => {
       try {
@@ -125,6 +196,8 @@ const Page = () => {
           previsaoDeferimento: formatarDataBrasileira(item.previsaoDeferimento),
         }));
         setData(formatadas);
+
+        await verificarEAtualizarDeferidas(formatadas);
       } catch (error) {
         console.error('Erro ao buscar Licenças de Importação:', error);
       } finally {
