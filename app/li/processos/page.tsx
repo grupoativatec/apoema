@@ -99,6 +99,30 @@ const Page = () => {
 
   const statusOrder = ['Em andamento', 'Pendente', 'Aguardando informação', 'Finalizado'];
 
+  const sortByDateDesc = (data: any[]) => {
+    return [...data].sort((a, b) => {
+      const getTime = (d?: string) => {
+        if (!d || typeof d !== 'string') return 0;
+        const parsed = new Date(d.trim() + 'T00:00:00');
+        return isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+      };
+
+      return getTime(a.chegada) - getTime(b.chegada); // mais antigo primeiro
+    });
+  };
+
+  const sortByDateDescFinalizados = (data: any[]) => {
+    return [...data].sort((a, b) => {
+      const getTime = (d?: string) => {
+        if (!d || typeof d !== 'string') return 0;
+        const parsed = new Date(d.trim() + 'T00:00:00');
+        return isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+      };
+
+      return getTime(b.chegada) - getTime(a.chegada); // mais novo primeiro
+    });
+  };
+
   const sortedOrquestra = [...filteredOrquestra].sort((a, b) => {
     if (sortField === 'status') {
       const indexA = statusOrder.indexOf(a.status || 'Pendente');
@@ -106,7 +130,7 @@ const Page = () => {
       return sortDirection === 'asc' ? indexA - indexB : indexB - indexA;
     }
 
-    return 0; // default, pode adicionar outros campos depois se quiser
+    return 0;
   });
 
   const handleSort = (field: string) => {
@@ -234,19 +258,19 @@ const Page = () => {
 
   const getFilteredByTab = () => {
     if (activeTab === 'lis') {
-      return filteredOrquestra.filter((o) => isLIS(o.status));
+      return sortByDateDesc(filteredOrquestra.filter((o) => isLIS(o.status)));
     }
     if (activeTab === 'liconferencia') {
-      return sortedOrquestra.filter((o) => isLiconferencia(o.status));
+      return sortByDateDesc(sortedOrquestra.filter((o) => isLiconferencia(o.status)));
     }
     if (activeTab === 'orquestra') {
-      return sortedOrquestra.filter((o) => isOrquestra(o.status));
+      return sortByDateDesc(sortedOrquestra.filter((o) => isOrquestra(o.status)));
     }
     if (activeTab === 'numerario') {
-      return sortedOrquestra.filter((o) => isNumerario(o.status));
+      return sortByDateDesc(sortedOrquestra.filter((o) => isNumerario(o.status)));
     }
     if (activeTab === 'finalizados') {
-      return sortedOrquestra.filter((o) => isFinalizados(o.status));
+      return sortByDateDescFinalizados(sortedOrquestra.filter((o) => isFinalizados(o.status)));
     }
     return [];
   };
