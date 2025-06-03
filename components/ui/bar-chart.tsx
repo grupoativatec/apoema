@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Cookies from 'js-cookie';
 import { TrendingUp } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, XAxis } from 'recharts';
 
@@ -42,18 +41,6 @@ export function TopProdutosChart() {
 
   useEffect(() => {
     const fetchData = () => {
-      const cache = Cookies.get('topProdutosCache');
-      if (cache) {
-        try {
-          const produtos = JSON.parse(cache) as Produto[];
-          setData(produtos);
-          setLoading(false);
-          return;
-        } catch {
-          console.error('Erro ao ler o cache de produtos');
-        }
-      }
-
       fetch('/api/top-produtos')
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -61,7 +48,6 @@ export function TopProdutosChart() {
         })
         .then((json: Produto[]) => {
           setData(json);
-          Cookies.set('topProdutosCache', JSON.stringify(json), { expires: 1 });
           setLoading(false);
         })
         .catch((err) => {
@@ -74,8 +60,8 @@ export function TopProdutosChart() {
     // Inicializa os dados
     fetchData();
 
-    // Atualiza os dados a cada 10 minutos (600000ms)
-    const intervalId = setInterval(fetchData, 600000);
+    // Atualiza os dados a cada 5 minutos (300000ms)
+    const intervalId = setInterval(fetchData, 300000); // 5 minutos
 
     // Cleanup do intervalo ao desmontar o componente
     return () => clearInterval(intervalId);
