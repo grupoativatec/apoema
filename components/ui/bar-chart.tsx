@@ -69,7 +69,7 @@ export function TopProdutosChart() {
 
   if (loading) {
     return (
-      <Card className="w-full animate-pulse">
+      <Card className="w-full animate-pulse ">
         <CardHeader>
           <Skeleton className="h-6 w-1/3" />
           <Skeleton className="h-4 w-1/4 mt-2" />
@@ -98,7 +98,7 @@ export function TopProdutosChart() {
   }
 
   return (
-    <Card className="w-full">
+    <Card className="w-full bg-white dark:border rounded-2xl dark:border-white/20 dark:bg-zinc-900/80 dark:text-white">
       <CardHeader>
         <CardTitle>Ranking de Produtos</CardTitle>
         <CardDescription>TOP 6 🚀</CardDescription>

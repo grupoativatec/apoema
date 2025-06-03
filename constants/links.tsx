@@ -11,7 +11,8 @@ export const SIDENAV_ITEMS: SideNavItem[] = [
     submenu: true,
     subMenuItems: [
       { title: 'Processos', path: '/li/processos' },
-      { title: 'Controle de li', path: '/li/controledeli' },
+      { title: 'Controle de Li', path: '/li/controledeli' },
+      { title: 'Buscar Ref.', path: '/li/buscar-referencia' },
     ],
   },
   // {

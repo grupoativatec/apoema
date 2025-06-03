@@ -115,7 +115,7 @@ export function TotalProcessos() {
   }
 
   return (
-    <Card className="w-full">
+    <Card className="w-full bg-white dark:border rounded-2xl dark:border-white/20 dark:bg-zinc-900/80 dark:text-white">
       <CardHeader className="items-center pb-0">
         <CardTitle>Processos por Status</CardTitle>
         <CardDescription>Status atual dos processos LI</CardDescription>
