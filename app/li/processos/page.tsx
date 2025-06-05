@@ -237,7 +237,7 @@ const Page = () => {
   };
 
   const isNumerario = (status: string) => {
-    return ['Fazer Númerario'].includes(status);
+    return ['Em andamentoNumerario', 'Fazer Númerario'].includes(status);
   };
 
   const isFinalizados = (status: string) => {
@@ -474,7 +474,7 @@ const Page = () => {
                             <SelectItem value="Fazer Númerario">Fazer Númerario</SelectItem>
                             <SelectItem value="Refazer">Refazer LI</SelectItem>
                             <SelectItem value="Fazer Orquestra">Refazer Orquestra</SelectItem>
-                            <SelectItem value="Em andamento">Em andamento</SelectItem>
+                            <SelectItem value="Em andamentoNumerario">Em andamento</SelectItem>
                             <SelectItem value="Finalizado">Finalizado</SelectItem>
                           </>
                         )}
