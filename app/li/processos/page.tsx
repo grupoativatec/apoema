@@ -267,7 +267,7 @@ const Page = () => {
       return sortByDateDesc(sortedOrquestra.filter((o) => isOrquestra(o.status)));
     }
     if (activeTab === 'numerario') {
-      return sortByDateDesc(sortedOrquestra.filter((o) => isNumerario(o.status)));
+      return sortByDateDesc(filteredOrquestra.filter((o) => isNumerario(o.status)));
     }
     if (activeTab === 'finalizados') {
       return sortByDateDescFinalizados(sortedOrquestra.filter((o) => isFinalizados(o.status)));
