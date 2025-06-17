@@ -20,8 +20,9 @@ interface Props {
 }
 
 const Sidebar = ({ name, avatar }: Props) => {
-  const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const { theme, setTheme } = useTheme();
+
 
   useEffect(() => {
     setMounted(true);
@@ -52,9 +53,10 @@ const Sidebar = ({ name, avatar }: Props) => {
         </div>
 
         <div className="px-4 py-6"></div>
-        {/* Rodapé - Usuário */}
+        {/* Rodapé - Tema + Usuário */}
         <div className="border-t border-zinc-200 px-6 py-4 dark:border-zinc-700">
           <div className="flex items-center justify-between">
+            {/* Avatar + Nome */}
             <div className="flex items-center gap-3">
               <Image
                 src={avatar ?? '/assets/images/avatar.png'}
@@ -75,16 +77,28 @@ const Sidebar = ({ name, avatar }: Props) => {
                 </Link>
               </div>
             </div>
-            <button
-              className="text-zinc-500 transition dark:text-zinc-400"
-              onClick={async () => {
-                await signOutUser();
-              }}
-            >
-              <Icon icon="lucide:log-out" width="20" height="20" />
-            </button>
+
+            {/* Botões de ações */}
+            <div className="flex flex-col items-end gap-2">
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="text-zinc-500 transition hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-white"
+              >
+                <Icon icon={theme === 'dark' ? 'lucide:sun' : 'lucide:moon'} width={20} height={20} />
+              </button>
+
+              <button
+                className="text-zinc-500 transition hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-white"
+                onClick={async () => {
+                  await signOutUser();
+                }}
+              >
+                <Icon icon="lucide:log-out" width="20" height="20" />
+              </button>
+            </div>
           </div>
         </div>
+
       </div>
     </div>
   );
