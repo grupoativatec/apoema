@@ -181,7 +181,7 @@ const Page = () => {
                 chegada: processo.DataPrevisaoETA || '',
                 analista: processo.Analista || '',
                 destino: processo.Destino || '',
-                anuencia: processo.ObsAnuencia || ''
+                anuencia: processo.ObsAnuencia || '',
               };
 
               // Tenta criar ou obter existente
@@ -194,12 +194,11 @@ const Page = () => {
                 existingOrquestra.importador !== orquestraData.importador ||
                 existingOrquestra.recebimento !== orquestraData.recebimento ||
                 existingOrquestra.chegada !== orquestraData.chegada ||
-                existingOrquestra.anuencia !== orquestraData.anuencia ||
                 existingOrquestra.destino !== orquestraData.destino;
 
               // Atualiza se necessário
               if (needsUpdate) {
-                await updateOrquestra(existingOrquestra.processoid, orquestraData);
+                await updateOrquestra(existingOrquestra.$id, orquestraData);
               }
             },
           ),
