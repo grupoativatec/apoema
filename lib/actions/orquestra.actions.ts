@@ -35,6 +35,7 @@ export const createOrquestra = async (data: {
   chegada: string;
   destino: string;
   status?: string;
+  statusAnuencia?: string;
   analista?: string;
   anuencia: string;
 }) => {
@@ -47,11 +48,11 @@ export const createOrquestra = async (data: {
 
     if (existing.length > 0) return existing[0];
 
-    const [result]: any = await pool.query(
+   const [result]: any = await pool.query(
       `INSERT INTO processos (
         imp, referencia, exportador, importador,
-        recebimento, chegada, destino, status, anuencia, analista
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        recebimento, chegada, destino, status, statusAnuencia, anuencia, analista
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, // <- Agora tem 11 ?
       [
         data.imp,
         data.referencia,
@@ -61,9 +62,11 @@ export const createOrquestra = async (data: {
         normalizeDateToISO(data.chegada),
         data.destino,
         status,
-        data.analista,
+        data.statusAnuencia ?? '', 
+        data.anuencia,
+        data.analista ?? '',
       ],
-    );
+  );
 
     return { processoid: result.insertId, ...data };
   } catch (error) {
@@ -181,7 +184,7 @@ export const getQuantidadeOrquestrasNoMes = async () => {
 // Função para atualizar o status de uma orquestra pelo campo "imp"
 export const updateOrquestraStatus = async (
   imp: string,
-  status: string,
+  status?: string,
   dataFinalizacao?: string,
 ) => {
   try {
@@ -248,6 +251,23 @@ export const getQuantidadeProcessosLiPorStatus = async () => {
     };
   } catch (error) {
     console.error('Erro ao buscar contagem de processos Li por status:', error);
+    throw error;
+  }
+};
+
+export const updateOrquestraStatusAnuencia = async (
+  imp: string,
+  statusAnuencia: string
+) => {
+  try {
+    const [rows]: any = await pool.query(
+      'UPDATE processos SET statusAnuencia = ? WHERE imp = ?',
+      [statusAnuencia, imp]
+    );
+
+    return { imp, statusAnuencia };
+  } catch (error) {
+    console.error('Erro ao atualizar statusAnuencia:', error);
     throw error;
   }
 };
