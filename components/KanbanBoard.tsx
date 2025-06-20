@@ -188,26 +188,27 @@ function KanbanBoard({ kanbanId }: KanbanBoardProps) {
           <SortableContext items={columnsId}>
             {loading ? (
               // Skeleton UI enquanto carrega
-              <div className="flex gap-4 animate-pulse">
-                {Array.from({ length: 3 }).map((_, idx) => (
-                  <div
-                    key={idx}
-                    className="flex flex-col w-[350px] h-[750px] rounded-md bg-zinc-800 border border-white/10 shadow-sm"
-                  >
-                    <div className="px-4 py-3 bg-zinc-700 rounded-t-md">
-                      <div className="h-5 bg-zinc-600 rounded w-2/3"></div>
-                    </div>
-                    <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3">
-                      <div className="h-6 bg-zinc-700 rounded w-full"></div>
-                      <div className="h-6 bg-zinc-700 rounded w-5/6"></div>
-                      <div className="h-6 bg-zinc-700 rounded w-4/5"></div>
-                    </div>
-                    <div className="px-4 py-2 bg-zinc-700 rounded-b-md">
-                      <div className="h-8 bg-zinc-600 rounded w-full"></div>
-                    </div>
+            <div className="flex gap-4 animate-pulse">
+              {Array.from({ length: 3 }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className="flex flex-col w-[350px] h-[750px] rounded-md bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-white/10 shadow-sm"
+                >
+                  <div className="px-4 py-3 bg-zinc-100 dark:bg-zinc-700 rounded-t-md">
+                    <div className="h-5 bg-zinc-200 dark:bg-zinc-600 rounded w-2/3"></div>
                   </div>
-                ))}
-              </div>
+                  <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3">
+                    <div className="h-6 bg-zinc-100 dark:bg-zinc-700 rounded w-full"></div>
+                    <div className="h-6 bg-zinc-100 dark:bg-zinc-700 rounded w-5/6"></div>
+                    <div className="h-6 bg-zinc-100 dark:bg-zinc-700 rounded w-4/5"></div>
+                  </div>
+                  <div className="px-4 py-2 bg-zinc-100 dark:bg-zinc-700 rounded-b-md">
+                    <div className="h-8 bg-zinc-200 dark:bg-zinc-600 rounded w-full"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             ) : columns.length === 0 ? (
               <div className="flex flex-col items-center justify-center text-center w-full min-h-[70vh] space-y-6 text-gray-500 dark:text-gray-300">
                 <div>
@@ -267,11 +268,12 @@ function KanbanBoard({ kanbanId }: KanbanBoardProps) {
 
       <Button
         onClick={CreateColumn}
-        className="fixed bottom-6 right-6 z-50 flex items-center justify-center gap-2 h-[50px] px-5 shadow-lg bg-blue-500 text-white hover:bg-blue-400 transition rounded-md border border-white/10 backdrop-blur-sm"
+        className="fixed bottom-6 right-6  z-50 flex items-center justify-center gap-2 h-[50px] px-5 shadow-lg bg-transparent text-black dark:bg-transparent dark:text-white hover:bg-blue-400 transition rounded-md border border-zinc-200 dark:border-white/10 backdrop-blur-sm"
       >
         <PlusIcon className="w-5 h-5" />
         <span className="text-sm font-medium">Adicionar Coluna</span>
       </Button>
+
     </div>
   );
 

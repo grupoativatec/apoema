@@ -61,16 +61,16 @@ function TaskCard({ task, deleteTask, updateTask, users }: Props) {
       <div
         ref={setNodeRef}
         style={style}
-        className="relative mb-1 overflow-y-hidden bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-md p-2 flex flex-col gap-1 shadow-sm cursor-grab opacity-60"
+        className="relative mb-1 overflow-y-hidden bg-white/80 dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 text-zinc-800 dark:text-zinc-200 rounded-md p-2 flex flex-col gap-1 shadow-sm cursor-grab opacity-60"
       >
         {/* Conteúdo da task */}
-        <p className="w-full text-white text-sm leading-tight whitespace-pre-wrap break-words">
+        <p className="w-full text-zinc-800 dark:text-white text-sm leading-tight whitespace-pre-wrap break-words">
           {task.content}
         </p>
 
         <div className="mt-2 flex items-center justify-start gap-2 text-xs">
           {/* Avatar */}
-          <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-zinc-800">
+          <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800">
             <img
               src={
                 USERS.find((u) => u.name === task.assignedTo)?.avatarUrl ??
@@ -82,13 +82,13 @@ function TaskCard({ task, deleteTask, updateTask, users }: Props) {
           </div>
 
           {/* Datas */}
-          <div className="flex items-center gap-1 text-yellow-300">
-            <div className="flex items-center gap-1 bg-zinc-800 px-2 py-1 rounded-full">
+          <div className="flex items-center gap-1  dark:text-yellow-300">
+            <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-full">
               <CalendarIcon className="w-3 h-3" />
               <span>{task.startDate ? format(parseISO(task.startDate), 'dd/MM') : 'Início'}</span>
             </div>
             <span>-</span>
-            <div className="flex items-center gap-1 bg-zinc-800 px-2 py-1 rounded-full">
+            <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-full">
               <CalendarIcon className="w-3 h-3" />
               <span>{task.endDate ? format(parseISO(task.endDate), 'dd/MM') : 'Fim'}</span>
             </div>
@@ -98,7 +98,7 @@ function TaskCard({ task, deleteTask, updateTask, users }: Props) {
         {/* Tags */}
         {task.tags && (
           <div className="mt-1">
-            <span className="px-2 text-[11px] rounded-full bg-purple-900/40 text-purple-300">
+            <span className="px-2 text-[11px] rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">
               #{task.tags}
             </span>
           </div>
@@ -107,13 +107,14 @@ function TaskCard({ task, deleteTask, updateTask, users }: Props) {
     );
   }
 
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...attributes}
       {...listeners}
-      className="relative mb-1 overflow-y-hidden bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-md p-3 flex flex-col gap-1 shadow-sm hover:ring-1 hover:ring-blue-400 transition-all cursor-grab"
+      className="relative mb-1 overflow-y-hidden bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 text-zinc-800 dark:text-zinc-200 rounded-md p-3 flex flex-col gap-1 shadow-sm hover:ring-1 hover:ring-blue-400 transition-all cursor-grab"
       onMouseEnter={() => setMouseIsOver(true)}
       onMouseLeave={() => setMouseIsOver(false)}
     >
@@ -127,7 +128,7 @@ function TaskCard({ task, deleteTask, updateTask, users }: Props) {
           updateTask(task.id, content, { content });
         }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full bg-transparent text-white text-sm leading-tight focus:outline-none focus:ring-0 resize-none"
+        className="w-full bg-transparent text-zinc-800 dark:text-white text-sm leading-tight focus:outline-none focus:ring-0 resize-none"
       />
 
       <div className="mt-2 flex items-center justify-start gap-2 text-xs">
@@ -136,7 +137,7 @@ function TaskCard({ task, deleteTask, updateTask, users }: Props) {
           <PopoverTrigger asChild>
             <button
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1 rounded-full bg-zinc-800 hover:bg-zinc-700 transition"
+              className="flex items-center gap-1 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition"
             >
               <img
                 src={
@@ -150,7 +151,7 @@ function TaskCard({ task, deleteTask, updateTask, users }: Props) {
           </PopoverTrigger>
           <PopoverContent
             onClick={(e) => e.stopPropagation()}
-            className="w-48 bg-zinc-800 border border-zinc-600 text-white"
+            className="w-48 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-zinc-800 dark:text-white"
           >
             <Command>
               <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
@@ -171,18 +172,18 @@ function TaskCard({ task, deleteTask, updateTask, users }: Props) {
         </Popover>
 
         {/* Datas */}
-        <div className="flex items-center gap-1 text-yellow-300">
+        <div className="flex items-center gap-1 dark:text-yellow-300">
           <Popover>
             <PopoverTrigger asChild>
               <button
                 onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-1 bg-zinc-800 hover:bg-zinc-700 px-1.5 py-0.5 rounded-full"
+                className="flex items-center gap-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 px-1.5 py-0.5 rounded-full"
               >
                 <CalendarIcon className="w-3 h-3" />
                 {task.startDate ? format(parseISO(task.startDate), 'dd/MM') : 'Início'}
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto border border-zinc-600 text-white">
+            <PopoverContent className="w-auto bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-zinc-800 dark:text-white">
               <Calendar
                 mode="single"
                 selected={task.startDate ? parseISO(task.startDate) : undefined}
@@ -202,13 +203,13 @@ function TaskCard({ task, deleteTask, updateTask, users }: Props) {
             <PopoverTrigger asChild>
               <button
                 onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-1 bg-zinc-800 hover:bg-zinc-700 px-1.5 py-0.5 rounded-full"
+                className="flex items-center gap-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 px-1.5 py-0.5 rounded-full"
               >
                 <CalendarIcon className="w-3 h-3" />
                 {task.endDate ? format(parseISO(task.endDate), 'dd/MM') : 'Fim'}
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto border border-zinc-600 text-white">
+            <PopoverContent className="w-auto bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 text-zinc-800 dark:text-white">
               <Calendar
                 mode="single"
                 selected={task.endDate ? parseISO(task.endDate) : undefined}
@@ -224,61 +225,60 @@ function TaskCard({ task, deleteTask, updateTask, users }: Props) {
         </div>
       </div>
 
-  
-    {/* Tags personalizadas */}
-    <div onClick={(e) => e.stopPropagation()} className="mt-1">
-      <Popover>
-        <PopoverTrigger asChild>
-          <button
-            type="button"
-            className={`px-2 text-[11px] rounded-full ${
-              task.tags
-                ? 'bg-purple-900/40 text-purple-300 hover:bg-purple-800'
-                : 'text-blue-400 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600'
-            } transition py-0.5`}
-          >
-            {task.tags ? `#${task.tags}` : '+ Tag'}
-          </button>
-        </PopoverTrigger>
-        <PopoverContent className="w-56 bg-zinc-900 border border-zinc-600 text-white">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const newTag = String(formData.get('newTag') || '').trim();
-              updateTask(task.id, content, { tags: newTag || undefined });
-            }}
-            className="space-y-2"
-          >
-            <label htmlFor="newTag" className="text-xs text-zinc-400 block">
-              {task.tags ? 'Editar tag' : 'Nova tag'}
-            </label>
-            <input
-              name="newTag"
-              defaultValue={task.tags ?? ''}
-              className="w-full bg-zinc-800 border border-zinc-600 text-sm px-2 py-1 rounded outline-none focus:ring-1 focus:ring-blue-400"
-              placeholder="Digite uma tag..."
-            />
+      {/* Tags personalizadas */}
+      <div onClick={(e) => e.stopPropagation()} className="mt-1">
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className={`px-2 text-[11px] rounded-full transition py-0.5 ${
+                task.tags
+                  ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800'
+                  : 'text-blue-600 bg-zinc-100 hover:bg-zinc-200 dark:text-blue-400 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-600'
+              }`}
+            >
+              {task.tags ? `#${task.tags}` : '+ Tag'}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 text-zinc-800 dark:text-white">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const newTag = String(formData.get('newTag') || '').trim();
+                updateTask(task.id, content, { tags: newTag || undefined });
+              }}
+              className="space-y-2"
+            >
+              <label htmlFor="newTag" className="text-xs text-zinc-500 dark:text-zinc-400 block">
+                {task.tags ? 'Editar tag' : 'Nova tag'}
+              </label>
+              <input
+                name="newTag"
+                defaultValue={task.tags ?? ''}
+                className="w-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 text-sm px-2 py-1 rounded outline-none focus:ring-1 focus:ring-blue-400"
+                placeholder="Digite uma tag..."
+              />
 
-            <div className="flex justify-between gap-2">
-              {task.tags && (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => updateTask(task.id, content, { tags: undefined })}
-                  className="w-full"
-                >
-                  Remover
+              <div className="flex justify-between gap-2">
+                {task.tags && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => updateTask(task.id, content, { tags: undefined })}
+                    className="w-full"
+                  >
+                    Remover
+                  </Button>
+                )}
+                <Button type="submit" className="w-full bg-sky-500 text-white hover:bg-sky-400">
+                  Criar
                 </Button>
-              )}
-              <Button type="submit" className="w-full bg-sky-500 text-white hover:bg-sky-400">
-                Criar
-              </Button>
-            </div>
-          </form>
-        </PopoverContent>
-      </Popover>
-    </div>
+              </div>
+            </form>
+          </PopoverContent>
+        </Popover>
+      </div>
 
       {/* Botão de deletar */}
       {mouseIsOver && (
@@ -287,12 +287,13 @@ function TaskCard({ task, deleteTask, updateTask, users }: Props) {
             e.stopPropagation();
             deleteTask(task.id);
           }}
-          className="absolute right-2 top-2 opacity-60 hover:opacity-100 p-1 rounded bg-zinc-800 hover:bg-red-600"
+          className="absolute right-2 top-2 opacity-60 hover:opacity-100 p-1 rounded bg-zinc-100 dark:bg-zinc-800 hover:bg-red-100 dark:hover:bg-red-600"
         >
-          <TrashIcon className="w-4 h-4 text-white" />
+          <TrashIcon className="w-4 h-4 text-zinc-800 dark:text-white" />
         </button>
       )}
-    </div>
+  </div>
+
   );
 }
 
