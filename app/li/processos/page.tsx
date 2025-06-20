@@ -384,30 +384,30 @@ const Page = () => {
       </div>
 
       {/* Abas estilo ClickUp */}
-      <div className="flex items-center gap-2 border-b border-border pb-2">
+      <div className="flex items-center gap-2 border-b border-border pb-2 uppercase ">
         <button
           onClick={() => setActiveTab('lis')}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all uppercase ${
             activeTab === 'lis'
               ? 'bg-primary text-white shadow-sm dark:text-black'
               : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
           }`}
         >
-          LIS a fazer
+          LI´S a fazer
         </button>
         <button
           onClick={() => setActiveTab('anuenciaPO')}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all uppercase ${
             activeTab === 'anuenciaPO'
               ? 'bg-primary text-white shadow-sm dark:text-black'
               : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
           }`}
         >
-          Po a fazer
+          PO a fazer
         </button>
         <button
           onClick={() => setActiveTab('liconferencia')}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all uppercase ${
             activeTab === 'liconferencia'
               ? 'bg-primary text-white shadow-sm dark:text-black'
               : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
@@ -417,7 +417,7 @@ const Page = () => {
         </button>
         <button
           onClick={() => setActiveTab('orquestra')}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all uppercase ${
             activeTab === 'orquestra'
               ? 'bg-primary text-white shadow-sm dark:text-black'
               : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
@@ -427,7 +427,7 @@ const Page = () => {
         </button>
         <button
           onClick={() => setActiveTab('numerario')}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all uppercase ${
             activeTab === 'numerario'
               ? 'bg-primary text-white shadow-sm dark:text-black'
               : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
@@ -437,7 +437,7 @@ const Page = () => {
         </button>
         <button
           onClick={() => setActiveTab('anuenciaPOFinalizada')}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all uppercase ${
             activeTab === 'anuenciaPOFinalizada'
               ? 'bg-primary text-white shadow-sm dark:text-black'
               : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
@@ -447,7 +447,7 @@ const Page = () => {
         </button>
         <button
           onClick={() => setActiveTab('finalizados')}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all uppercase ${
             activeTab === 'finalizados'
               ? 'bg-primary text-white shadow-sm dark:text-black'
               : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'

@@ -23,7 +23,6 @@ const Sidebar = ({ name, avatar }: Props) => {
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
 
-
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -84,7 +83,11 @@ const Sidebar = ({ name, avatar }: Props) => {
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 className="text-zinc-500 transition hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-white"
               >
-                <Icon icon={theme === 'dark' ? 'lucide:sun' : 'lucide:moon'} width={20} height={20} />
+                <Icon
+                  icon={theme === 'dark' ? 'lucide:sun' : 'lucide:moon'}
+                  width={20}
+                  height={20}
+                />
               </button>
 
               <button
@@ -98,7 +101,6 @@ const Sidebar = ({ name, avatar }: Props) => {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );
