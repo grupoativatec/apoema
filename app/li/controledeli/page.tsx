@@ -134,6 +134,8 @@ const Page = () => {
       if (!response.ok) throw new Error('Erro ao buscar dados das LIs deferidas.');
 
       const { dados: deferidas = [] } = await response.json();
+        console.log('LIs deferidas retornadas da API:', deferidas);
+
 
       const licencasAtualizadas = licencas.map((li) => {
         const encontrada = deferidas.find(
@@ -184,6 +186,8 @@ const Page = () => {
       console.error('Erro ao verificar LIs deferidas:', err);
     }
   };
+
+
 
   useEffect(() => {
     const fetchLicencas = async () => {
