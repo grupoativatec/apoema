@@ -1,10 +1,6 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 'use server';
-
-import { createAdminClient } from '@/lib/appwrite';
-import { appwriteConfig } from '@/lib/appwrite/config';
-import { ID, Query } from 'node-appwrite';
 import { pool } from '../database/db';
 
 const normalizeDateToISO = (dateStr: string) => {
@@ -36,6 +32,7 @@ export const createOrquestra = async (data: {
   destino: string;
   status?: string;
   analista?: string;
+  anuencia: string;
 }) => {
   try {
     const status = 'PendenteLi';
@@ -49,8 +46,8 @@ export const createOrquestra = async (data: {
     const [result]: any = await pool.query(
       `INSERT INTO processos (
         imp, referencia, exportador, importador,
-        recebimento, chegada, destino, status, analista
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        recebimento, chegada, destino, status, obs, analista, anuencia
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         data.imp,
         data.referencia,
@@ -60,7 +57,9 @@ export const createOrquestra = async (data: {
         normalizeDateToISO(data.chegada),
         data.destino,
         status,
-        data.analista,
+        '', // obs vazio
+        data.analista ?? '',
+        data.anuencia ?? '',
       ],
     );
 
@@ -70,6 +69,7 @@ export const createOrquestra = async (data: {
     throw error;
   }
 };
+
 
 // Função para atualizar um documento na tabela "orquestra"
 export const updateOrquestra = async (
@@ -85,14 +85,23 @@ export const updateOrquestra = async (
     status?: string;
     obs?: string;
     analista?: string;
+    anuencia?: string;
   },
 ) => {
   try {
     await pool.query(
       `UPDATE processos SET 
-        imp = ?, referencia = ?, exportador = ?, importador = ?, 
-        recebimento = ?, chegada = ?, destino = ?, 
-        status = ?, obs = ?, analista = ?
+        imp = ?, 
+        referencia = ?, 
+        exportador = ?, 
+        importador = ?, 
+        recebimento = ?, 
+        chegada = ?, 
+        destino = ?, 
+        status = ?, 
+        obs = ?, 
+        analista = ?, 
+        anuencia = ?
       WHERE processoid = ?`,
       [
         data.imp,
@@ -105,6 +114,7 @@ export const updateOrquestra = async (
         data.status ?? '',
         data.obs ?? '',
         data.analista ?? '',
+        data.anuencia ?? '',
         id,
       ],
     );
@@ -115,6 +125,7 @@ export const updateOrquestra = async (
     throw error;
   }
 };
+
 
 // READ
 export const getOrquestras = async () => {

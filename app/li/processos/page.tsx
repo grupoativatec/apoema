@@ -170,6 +170,7 @@ const Page = () => {
               DataPrevisaoETA: string;
               Analista: string;
               Destino: string;
+              ObsAnuencia: string;
             }) => {
               const orquestraData = {
                 imp: processo.Processo || '',
@@ -180,6 +181,7 @@ const Page = () => {
                 chegada: processo.DataPrevisaoETA || '',
                 analista: processo.Analista || '',
                 destino: processo.Destino || '',
+                anuencia: processo.ObsAnuencia || ''
               };
 
               // Tenta criar ou obter existente
@@ -192,11 +194,12 @@ const Page = () => {
                 existingOrquestra.importador !== orquestraData.importador ||
                 existingOrquestra.recebimento !== orquestraData.recebimento ||
                 existingOrquestra.chegada !== orquestraData.chegada ||
+                existingOrquestra.anuencia !== orquestraData.anuencia ||
                 existingOrquestra.destino !== orquestraData.destino;
 
               // Atualiza se necessário
               if (needsUpdate) {
-                await updateOrquestra(existingOrquestra.$id, orquestraData);
+                await updateOrquestra(existingOrquestra.processoid, orquestraData);
               }
             },
           ),
