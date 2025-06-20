@@ -170,6 +170,7 @@ const Page = () => {
               DataPrevisaoETA: string;
               Analista: string;
               Destino: string;
+              ObsAnuencia: string;
             }) => {
               const orquestraData = {
                 imp: processo.Processo || '',
@@ -180,6 +181,7 @@ const Page = () => {
                 chegada: processo.DataPrevisaoETA || '',
                 analista: processo.Analista || '',
                 destino: processo.Destino || '',
+                anuencia: processo.ObsAnuencia || '',
               };
 
               // Tenta criar ou obter existente

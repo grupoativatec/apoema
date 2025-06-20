@@ -4,7 +4,6 @@ import React from "react";
 import { redirect } from "next/navigation";
 import MobileNavigation from "@/components/MobileNavigation";
 import { Toaster } from "@/components/ui/toaster";
-import Header from "@/components/Header";
 
 const layout = async ({ children }: { children: React.ReactNode }) => {
   const currentUser = await getCurrentUser();
@@ -18,7 +17,6 @@ const layout = async ({ children }: { children: React.ReactNode }) => {
       userId={currentUser.id}
       accountId={currentUser.nome}      />
       <section className="flex h-full flex-col md:pl-52">
-        <Header userId={currentUser.id} accountId={currentUser.nome} />
         <MobileNavigation fullName={""} {...currentUser} />
         <div className="main-content p-6">
           {children}

@@ -49,11 +49,19 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/processos',
-        destination: 'http://172.30.20.192:4001/api/processos', // Proxy para o seu endpoint
+        destination: 'http://172.30.20.246:4001/api/processos', // Proxy para o seu endpoint
       },
       {
         source: '/api/top-produtos',
         destination: 'http://172.30.20.246:3003/top-produtos', // Proxy para o seu endpoint de top-produtos
+      },
+      {
+        source: '/api/li-deferidas',
+        destination: 'http://172.30.20.246:4002/api/deferidas',
+      },
+      {
+        source: '/api/buscar',
+        destination: 'http://172.30.20.246:3005/buscar', // Proxy para o seu endpoint de buscar
       },
     ];
   },

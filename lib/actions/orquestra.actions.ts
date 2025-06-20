@@ -36,6 +36,7 @@ export const createOrquestra = async (data: {
   destino: string;
   status?: string;
   analista?: string;
+  anuencia: string;
 }) => {
   try {
     const status = 'PendenteLi';
@@ -49,8 +50,8 @@ export const createOrquestra = async (data: {
     const [result]: any = await pool.query(
       `INSERT INTO processos (
         imp, referencia, exportador, importador,
-        recebimento, chegada, destino, status, analista
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        recebimento, chegada, destino, status, anuencia, analista
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         data.imp,
         data.referencia,
