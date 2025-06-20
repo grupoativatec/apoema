@@ -10,6 +10,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from './ui/calendar';
 import TextareaAutosize from 'react-textarea-autosize';
+import { Button } from './ui/button';
 
 interface Props {
   task: Task;
@@ -47,10 +48,12 @@ function TaskCard({ task, deleteTask, updateTask, users }: Props) {
     if (content !== task.content) {
       if (updateTimeout.current) clearTimeout(updateTimeout.current);
       updateTimeout.current = setTimeout(() => {
-        updateTask(task.id, content);
+      updateTask(task.id, content, { content });
       }, 500);
     }
   }, [content]);
+
+
 
   // Componente visual durante o arrasto (sombras, opacidade, etc.)
   if (isDragging) {
@@ -76,7 +79,6 @@ function TaskCard({ task, deleteTask, updateTask, users }: Props) {
               alt="avatar"
               className="w-5 h-5 rounded-full"
             />
-            <span>{task.assignedTo}</span>
           </div>
 
           {/* Datas */}
@@ -122,7 +124,7 @@ function TaskCard({ task, deleteTask, updateTask, users }: Props) {
         onFocus={() => setIsEditing(true)}
         onBlur={() => {
           setIsEditing(false);
-          updateTask(task.id, content);
+          updateTask(task.id, content, { content });
         }}
         onClick={(e) => e.stopPropagation()}
         className="w-full bg-transparent text-white text-sm leading-tight focus:outline-none focus:ring-0 resize-none"
@@ -222,48 +224,61 @@ function TaskCard({ task, deleteTask, updateTask, users }: Props) {
         </div>
       </div>
 
-      {/* Tags */}
-      <div onClick={(e) => e.stopPropagation()} className="mt-1">
-        <Popover>
-          <PopoverTrigger asChild>
-            {task.tags ? (
-              <button
-                type="button"
-                className="px-2 text-[11px] rounded-full bg-purple-900/40 text-purple-300 hover:bg-purple-800 transition"
-              >
-                #{task.tags}
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="text-[11px] text-blue-400 bg-zinc-800 hover:bg-zinc-700 px-2 py-0.5 rounded-full border border-zinc-600"
-              >
-                + Tag
-              </button>
-            )}
-          </PopoverTrigger>
-          <PopoverContent
-            onClick={(e) => e.stopPropagation()}
-            className="w-48 border border-zinc-600 text-white"
+  
+    {/* Tags personalizadas */}
+    <div onClick={(e) => e.stopPropagation()} className="mt-1">
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className={`px-2 text-[11px] rounded-full ${
+              task.tags
+                ? 'bg-purple-900/40 text-purple-300 hover:bg-purple-800'
+                : 'text-blue-400 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600'
+            } transition py-0.5`}
           >
-            <Command>
-              <CommandEmpty>Nenhuma tag encontrada.</CommandEmpty>
-              <CommandGroup>
-                {TAGS.map((tag) => (
-                  <CommandItem
-                    key={tag}
-                    onSelect={() => updateTask(task.id, content, { tags: tag })}
-                    className="flex items-center justify-between cursor-pointer"
-                  >
-                    <span>#{tag}</span>
-                    {task.tags === tag && <span className="text-green-400 text-xs">✓</span>}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </Command>
-          </PopoverContent>
-        </Popover>
-      </div>
+            {task.tags ? `#${task.tags}` : '+ Tag'}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-56 bg-zinc-900 border border-zinc-600 text-white">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const newTag = String(formData.get('newTag') || '').trim();
+              updateTask(task.id, content, { tags: newTag || undefined });
+            }}
+            className="space-y-2"
+          >
+            <label htmlFor="newTag" className="text-xs text-zinc-400 block">
+              {task.tags ? 'Editar tag' : 'Nova tag'}
+            </label>
+            <input
+              name="newTag"
+              defaultValue={task.tags ?? ''}
+              className="w-full bg-zinc-800 border border-zinc-600 text-sm px-2 py-1 rounded outline-none focus:ring-1 focus:ring-blue-400"
+              placeholder="Digite uma tag..."
+            />
+
+            <div className="flex justify-between gap-2">
+              {task.tags && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => updateTask(task.id, content, { tags: undefined })}
+                  className="w-full"
+                >
+                  Remover
+                </Button>
+              )}
+              <Button type="submit" className="w-full bg-sky-500 text-white hover:bg-sky-400">
+                Criar
+              </Button>
+            </div>
+          </form>
+        </PopoverContent>
+      </Popover>
+    </div>
 
       {/* Botão de deletar */}
       {mouseIsOver && (

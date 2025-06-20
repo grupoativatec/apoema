@@ -51,7 +51,7 @@ function ColumnContainer(props: Props) {
       <div
         ref={setNodeRef}
         style={style}
-        className="w-[350px] h-[500px] opacity-40 rounded-lg bg-zinc-700/80 border-2 border-dashed border-zinc-500 shadow-xl opacity-80 pointer-events-none flex flex-col"
+        className="w-[350px] h-[750px] opacity-40 rounded-lg bg-zinc-700/80 border-2 border-dashed border-zinc-500 shadow-xl opacity-80 pointer-events-none flex flex-col"
       >
         <div className="bg-zinc-600 h-[60px] px-4 py-3 flex items-center justify-between border-b border-zinc-500">
           <div className="flex items-center gap-3 text-white font-semibold text-sm">
@@ -75,7 +75,7 @@ function ColumnContainer(props: Props) {
     <div
       ref={setNodeRef}
       style={style}
-      className="bg-zinc-800 w-[350px] h-[500px] rounded-lg shadow-md border border-zinc-700 flex flex-col overflow-hidden"
+      className="bg-zinc-800 w-[350px] h-[750px] rounded-lg shadow-md border border-zinc-700 flex flex-col overflow-hidden"
     >
       {/* Header */}
       <div
@@ -84,7 +84,9 @@ function ColumnContainer(props: Props) {
         {...listeners}
       >
         <div className="flex items-center gap-3 text-white font-semibold text-sm w-full">
-          <div className="bg-blue text-white px-2 py-1 text-xs rounded-full font-bold">0</div>
+        <div className="bg-blue text-white px-2 py-1 text-xs rounded-full font-bold">
+          {tasks.length}
+        </div>
           {!editMode ? (
             <span
               className="truncate w-full cursor-text"

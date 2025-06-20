@@ -5,6 +5,18 @@ import { Button } from '@/components/ui/button';
 import { PencilIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/solid';
 import { useEffect, useState } from 'react';
 import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
+
+import {
   Dialog,
   DialogTrigger,
   DialogContent,
@@ -139,7 +151,7 @@ export default function KanbanListPage() {
         </div>
 
         {/* Lista de Kanbans */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {isLoading
             ? Array.from({ length: 6 }).map((_, i) => (
                 <div
@@ -153,19 +165,19 @@ export default function KanbanListPage() {
             : kanbans.map((kanban) => (
                 <div
                   key={kanban.id}
-                  className="relative group bg-zinc-800 hover:bg-zinc-700 transition-colors p-6 rounded-xl shadow-md border border-zinc-600 text-left hover:shadow-lg"
+                  className="group relative bg-zinc-800 hover:ring-2 hover:ring-blue-500 transition-all duration-300 p-5 rounded-lg shadow border border-zinc-700"
                 >
                   <button
                     onClick={() => router.push(`/kanban/${kanban.id}`)}
                     className="w-full text-left"
                   >
-                    <h2 className="text-xl font-semibold text-white group-hover:text-blue-400 transition-colors">
+                    <h2 className="text-lg font-semibold text-white group-hover:text-blue-400 transition-colors">
                       {kanban.name}
                     </h2>
-                    <p className="text-sm text-zinc-400 mt-1">Clique para abrir</p>
+                    <p className="text-sm text-zinc-400 mt-1">Clique para abrir o kanban</p>
                   </button>
 
-                  <div className="absolute top-2 right-2 flex gap-2">
+                  <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition">
                     <button
                       onClick={() => {
                         setEditingKanban(kanban);
@@ -176,15 +188,41 @@ export default function KanbanListPage() {
                     >
                       <PencilIcon className="w-4 h-4 text-white" />
                     </button>
-                    <button
-                      onClick={() => handleDeleteKanban(kanban.id)}
-                      className="p-1 rounded hover:bg-red-600 transition"
-                      title="Excluir"
-                    >
-                      <TrashIcon className="w-4 h-4 text-white" />
-                    </button>
+
+                    {/* Alerta de exclusão */}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button
+                          className="p-1 rounded hover:bg-red-600 transition"
+                          title="Excluir"
+                        >
+                          <TrashIcon className="w-4 h-4 text-white" />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="bg-zinc-900 border border-zinc-700 text-white">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Deseja realmente excluir?</AlertDialogTitle>
+                          <AlertDialogDescription className="text-zinc-400">
+                            Essa ação não pode ser desfeita. O kanban <strong>{kanban.name}</strong> será removido
+                            permanentemente.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter className="mt-6">
+                          <AlertDialogCancel className="bg-zinc-700 hover:bg-zinc-600 text-white">
+                            Cancelar
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteKanban(kanban.id)}
+                            className="bg-red-600 hover:bg-red-500 text-white"
+                          >
+                            Confirmar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
+
               ))}
         </div>
 
