@@ -3,7 +3,7 @@
 'use client';
 import * as XLSX from 'xlsx';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Table,
   TableBody,
@@ -51,6 +51,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
+import { useVirtualizer } from '@tanstack/react-virtual';
 
 const formatarDataBrasileira = (data: string | Date): string => {
   if (!data) return '';
@@ -89,8 +90,10 @@ const formatarDataInternacional = (data: string) => {
 };
 
 const Page = () => {
+  const parentRef = useRef<HTMLDivElement>(null);
+
   const [data, setData] = useState<any[] | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Estado de carregamento
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const [mostrarSomenteNaoDeferidas, setMostrarSomenteNaoDeferidas] = useState(true);
 
@@ -136,7 +139,6 @@ const Page = () => {
       if (!response.ok) throw new Error('Erro ao buscar dados das LIs deferidas.');
 
       const { dados: deferidas = [] } = await response.json();
-      console.log('LIs deferidas retornadas da API:', deferidas);
 
       const licencasAtualizadas = licencas.map((li) => {
         const encontrada = deferidas.find(
@@ -350,7 +352,6 @@ const Page = () => {
         dataInclusaoOrquestra: formatarDataInternacional(item.dataInclusaoOrquestra),
         previsaoDeferimento: formatarDataInternacional(item.previsaoDeferimento),
       });
-      console.log(`Licença de Importação com id ${id} atualizada com sucesso.`);
     } catch (err) {
       console.error('Erro ao atualizar Licença de Importação no backend:', err);
       alert('Erro ao salvar a alteração no backend. Tente novamente.');
@@ -560,27 +561,13 @@ const Page = () => {
     });
   };
 
-  useEffect(() => {
-    if (form.dataInclusaoOrquestra && form.dataInclusaoOrquestra.length === 10) {
-      const dateParts = form.dataInclusaoOrquestra.split('/');
-
-      if (dateParts.length === 3) {
-        const [day, month, year] = dateParts;
-
-        const fullYear = year.length === 2 ? `20${year}` : year;
-
-        const formattedDate = `${fullYear}-${month}-${day}`;
-
-        const previsao = calcularPrevisaoDeferimento(formattedDate);
-
-        setForm((prev) => ({ ...prev, previsaoDeferimento: previsao }));
-      } else {
-        console.log('Data no formato inválido', form.dataInclusaoOrquestra);
-      }
-    } else if (form.dataInclusaoOrquestra && form.dataInclusaoOrquestra.length !== 10) {
-      console.log('A data deve ter o formato dd/mm/yyyy completo.');
-    }
-  }, [form.dataInclusaoOrquestra]);
+  // Virtualizer configurado com os dados filtrados
+  const rowVirtualizer = useVirtualizer({
+    count: filteredData.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 60,
+    overscan: 10,
+  });
 
   return (
     <div className="space-y-10 rounded-2xl bg-white p-8 shadow-md dark:border dark:border-white/20 dark:bg-zinc-900/80">
@@ -697,6 +684,19 @@ const Page = () => {
                   placeholder="Data Pagamento"
                   value={form.dataInclusaoOrquestra}
                   onChange={(e) => setForm({ ...form, dataInclusaoOrquestra: e.target.value })}
+                  onBlur={(e) => {
+                    const value = e.target.value;
+                    if (value && value.length === 10) {
+                      const dateParts = value.split('/');
+                      if (dateParts.length === 3) {
+                        const [day, month, year] = dateParts;
+                        const fullYear = year.length === 2 ? `20${year}` : year;
+                        const formattedDate = `${fullYear}-${month}-${day}`;
+                        const previsao = calcularPrevisaoDeferimento(formattedDate);
+                        setForm((prev) => ({ ...prev, previsaoDeferimento: previsao }));
+                      }
+                    }
+                  }}
                 />
 
                 <div className="flex flex-col gap-1">
@@ -740,7 +740,7 @@ const Page = () => {
         </div>
       </div>
 
-      <div className="max-h-[550px] overflow-auto rounded-2xl border">
+      <div ref={parentRef} className="max-h-[550px] overflow-auto rounded-2xl border">
         <Table>
           <TableHeader className="sticky top-0 z-10 bg-white shadow-md dark:bg-zinc-900">
             <TableRow>
@@ -758,7 +758,7 @@ const Page = () => {
               <TableHead>Ações</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
             {isLoading
               ? Array.from({ length: 5 }).map((_, index) => (
                   <TableRow key={index}>
