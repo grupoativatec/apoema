@@ -282,11 +282,18 @@ const Page = () => {
     const item = data?.find((i) => i.licencaimportacaoid === id);
     if (!item) return;
 
+    // Regex formats
     const formatoImp = /^IMP-\d{6}$/;
     const formatoNumeroLi = /^\d{2}\/\d{7}-\d{1}$/;
     const formatoNumeroOrquestra = /^\d{7}$/;
 
-    if (!formatoNumeroOrquestra.test(item.numeroOrquestra.toString())) {
+    // Sanitize inputs
+    const numeroOrquestra = item.numeroOrquestra?.toString().trim() || '';
+    const imp = item.imp?.trim().toUpperCase() || '';
+    const numeroLi = item.numeroLi?.trim() || '';
+
+    // Validação do Número Orquestra (7 dígitos)
+    if (!formatoNumeroOrquestra.test(numeroOrquestra)) {
       toast({
         title: 'Formato inválido',
         description: 'Número do Orquestra inválido. Deve conter exatamente 7 dígitos (ex: 3350012)',
@@ -295,7 +302,8 @@ const Page = () => {
       return;
     }
 
-    if (!formatoImp.test(item.imp)) {
+    // Validação do formato IMP (IMP-123456)
+    if (!formatoImp.test(imp)) {
       toast({
         title: 'Formato inválido',
         description: 'IMP inválido. O formato correto é: IMP-233631',
@@ -305,7 +313,7 @@ const Page = () => {
     }
 
     // Validação do formato número LI: 25/1350447-1
-    if (!formatoNumeroLi.test(item.numeroLi)) {
+    if (!formatoNumeroLi.test(numeroLi)) {
       toast({
         title: 'Formato inválido',
         description: 'O número da LI deve seguir o padrão: 25/1350447-1',
