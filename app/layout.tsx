@@ -3,6 +3,7 @@ import { Poppins } from 'next/font/google';
 
 import './globals.css';
 import { ThemeProvider } from 'next-themes';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,14 +36,16 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${poppins.variable} font-poppins antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem={false}
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
+        <TooltipProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem={false}
+            disableTransitionOnChange
+          >
+            {children}
+          </ThemeProvider>
+        </TooltipProvider>
       </body>
     </html>
   );

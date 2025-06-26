@@ -48,7 +48,7 @@ export const createOrquestra = async (data: {
 
     if (existing.length > 0) return existing[0];
 
-   const [result]: any = await pool.query(
+    const [result]: any = await pool.query(
       `INSERT INTO processos (
         imp, referencia, exportador, importador,
         recebimento, chegada, destino, status, statusAnuencia, anuencia, analista
@@ -62,11 +62,11 @@ export const createOrquestra = async (data: {
         normalizeDateToISO(data.chegada),
         data.destino,
         status,
-        data.statusAnuencia ?? '', 
+        data.statusAnuencia ?? '',
         data.anuencia,
         data.analista ?? '',
       ],
-  );
+    );
 
     return { processoid: result.insertId, ...data };
   } catch (error) {
@@ -255,15 +255,12 @@ export const getQuantidadeProcessosLiPorStatus = async () => {
   }
 };
 
-export const updateOrquestraStatusAnuencia = async (
-  imp: string,
-  statusAnuencia: string
-) => {
+export const updateOrquestraStatusAnuencia = async (imp: string, statusAnuencia: string) => {
   try {
-    const [rows]: any = await pool.query(
-      'UPDATE processos SET statusAnuencia = ? WHERE imp = ?',
-      [statusAnuencia, imp]
-    );
+    const [rows]: any = await pool.query('UPDATE processos SET statusAnuencia = ? WHERE imp = ?', [
+      statusAnuencia,
+      imp,
+    ]);
 
     return { imp, statusAnuencia };
   } catch (error) {

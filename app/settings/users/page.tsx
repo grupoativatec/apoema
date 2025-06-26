@@ -1,21 +1,17 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useTransition } from "react";
-import {
-  createAccount,
-  deleteUser,
-  getAllUsers,
-} from "@/lib/actions/user.actions";
+import { useEffect, useState, useTransition } from 'react';
+import { createAccount, deleteUser, getAllUsers, updateUserRole } from '@/lib/actions/user.actions';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -23,11 +19,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useToast } from "@/hooks/use-toast";
+} from '@/components/ui/table';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Trash2 } from 'lucide-react';
 
 type User = {
+  role: string | undefined;
   id: number;
   name: string;
   email: string;
@@ -37,9 +44,32 @@ type User = {
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [newUser, setNewUser] = useState({ name: "", email: "", password: "" });
+  const [newUser, setNewUser] = useState({ name: '', email: '', password: '' });
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+
+  const router = useRouter();
+
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      try {
+        const res = await fetch('/api/is-admin');
+        const data = await res.json();
+
+        if (!data.isAdmin) {
+          router.push('/dashboard');
+        } else {
+          setHasAccess(true);
+        }
+      } catch (err) {
+        router.push('/dashboard');
+      }
+    };
+
+    checkAdmin();
+  }, [router]);
 
   // funcao pra remover usarios
   const handleRemove = (id: number) => {
@@ -47,17 +77,16 @@ export default function UsersPage() {
       try {
         await deleteUser(id);
         setUsers((prev) => prev.filter((user) => user.id !== id));
-        toast({ description: "Usuário removido com sucesso!" });
+        toast({ description: 'Usuário removido com sucesso!' });
       } catch (err) {
-        console.error("Erro ao remover usuário:", err);
+        console.error('Erro ao remover usuário:', err);
         toast({
-          description: "Erro ao remover usuário.",
-          variant: "destructive",
+          description: 'Erro ao remover usuário.',
+          variant: 'destructive',
         });
       }
     });
   };
-
 
   // funcao pra retornar todos os usarios cadastrados
   useEffect(() => {
@@ -67,7 +96,6 @@ export default function UsersPage() {
     };
     fetchUsers();
   }, []);
-
 
   // funcao pra adicionar novos usarios
   const handleAddUser = async () => {
@@ -81,18 +109,34 @@ export default function UsersPage() {
       // atualizando novos usarios
       const refreshedUsers = await getAllUsers();
       setUsers(refreshedUsers);
-      setNewUser({ name: "", email: "", password: "" });
+      setNewUser({ name: '', email: '', password: '' });
       setDialogOpen(false);
-      toast({ description: "Usuário criado com sucesso!" });
+      toast({ description: 'Usuário criado com sucesso!' });
     } catch (err) {
-      console.error("Erro ao adicionar usuário:", err);
+      console.error('Erro ao adicionar usuário:', err);
       toast({
-        description: "Erro ao adicionar usuário.",
-        variant: "destructive",
+        description: 'Erro ao adicionar usuário.',
+        variant: 'destructive',
       });
     }
   };
 
+  const handleRoleChange = async (userId: number, role: string) => {
+    console.log('Mudando role do usuário', userId, 'para', role); // Verifique o que está sendo passado
+    try {
+      await updateUserRole(userId, role);
+      // Atualiza a lista de usuários
+      const refreshedUsers = await getAllUsers();
+      setUsers(refreshedUsers);
+      toast({ description: 'Role atualizada com sucesso!' });
+    } catch (err) {
+      console.error('Erro ao atualizar role:', err);
+      toast({
+        description: 'Erro ao atualizar role.',
+        variant: 'destructive',
+      });
+    }
+  };
   return (
     <main className="min-h-screen flex-1 bg-light-400 px-6 py-10 dark:border-white/20 dark:bg-zinc-900/80 dark:text-white">
       <div className="mx-auto max-w-7xl">
@@ -175,6 +219,7 @@ export default function UsersPage() {
                   <TableHead>Nome</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="text-right">Alterar Role</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -192,16 +237,36 @@ export default function UsersPage() {
                     <TableCell className="font-medium text-zinc-800 dark:text-zinc-200">
                       {user.email}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="rounded-md"
-                        onClick={() => handleRemove(user.id)}
-                        disabled={isPending}
+                    <TableCell className="text-right max-w-[20px]">
+                      <Select
+                        value={user.role || 'membro'}
+                        onValueChange={(value) => handleRoleChange(user.id, value)}
                       >
-                        Remover
-                      </Button>
+                        <SelectTrigger className="uppercase">
+                          <SelectValue>{user.role || 'membro'}</SelectValue>{' '}
+                          {/* Exibe 'Membro' se a role não estiver definida */}
+                        </SelectTrigger>
+                        <SelectContent className="uppercase">
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="membro">Membro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="rounded-md"
+                            onClick={() => handleRemove(user.id)}
+                            disabled={isPending}
+                          >
+                            <Trash2 size={18} />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Excluir</TooltipContent>
+                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 ))}

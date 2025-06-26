@@ -36,8 +36,6 @@ export const createTask = async (task: {
 function formatDateToMariaDBDate(date?: string | Date): string | undefined {
   if (!date) return undefined;
 
-  console.log('🕵️ Valor recebido em formatDateToMariaDBDate:', date);
-
   const d = typeof date === 'string' ? new Date(date) : date;
 
   if (!(d instanceof Date) || isNaN(d.getTime())) {

@@ -30,10 +30,34 @@ import {
 } from '@/lib/actions/orquestra.actions';
 import EmptyState from '@/components/EmptyState';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Pencil, Trash2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const Page = () => {
   const [orquestra, setOrquestra] = useState<any[]>([]);
   const [filteredOrquestra, setFilteredOrquestra] = useState<any[]>([]);
+  const { toast } = useToast(); // Usando o hook do toast
+
+  const [isAdminUser, setIsAdminUser] = useState(false);
+
+  useEffect(() => {
+    const fetchAdminStatus = async () => {
+      const res = await fetch('/api/is-admin');
+      const { isAdmin } = await res.json();
+      setIsAdminUser(isAdmin);
+    };
+
+    fetchAdminStatus();
+  }, []);
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -482,6 +506,7 @@ const Page = () => {
                   Status {sortDirection === 'asc' ? '▲' : '▼'}
                 </TableHead>
                 <TableHead className="min-w-[100px]">Observação</TableHead>
+                {isAdminUser && <TableHead className="min-w-[100px]">Ações</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -516,6 +541,7 @@ const Page = () => {
                       {item.destino || '-'}
                     </Badge>
                   </TableCell>
+
                   <TableCell>
                     {activeTab === 'anuenciaPO' ? (
                       <Select
@@ -623,6 +649,53 @@ const Page = () => {
                       className="h-[40px] max-w-[150px] resize-none overflow-auto px-2 py-1 text-sm"
                     />
                   </TableCell>
+
+                  {isAdminUser && (
+                    <TableCell className="text-center flex items-center">
+                      <DeleteIMPDialog
+                        imp={item.imp}
+                        onConfirm={async () => {
+                          try {
+                            const res = await fetch('/api/delete-orquestra', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ processoid: item.processoid }),
+                            });
+
+                            const result = await res.json();
+
+                            if (result.success) {
+                              // Atualiza a lista de orquestras após a exclusão
+                              setOrquestra((prev) =>
+                                prev.filter((o) => o.processoid !== item.processoid),
+                              );
+                              setFilteredOrquestra((prev) =>
+                                prev.filter((o) => o.processoid !== item.processoid),
+                              );
+
+                              // Exibe o toast de sucesso
+                              toast({
+                                description: `${item.imp} excluído com sucesso!`,
+                              });
+                            } else {
+                              // Exibe o toast de erro caso a exclusão falhe
+                              toast({
+                                description: 'Erro ao excluir a IMP.',
+                                variant: 'destructive',
+                              });
+                            }
+                          } catch (error) {
+                            console.error('Erro ao excluir IMP:', error);
+                            // Exibe o toast de erro caso ocorra algum erro na chamada da API
+                            toast({
+                              description: 'Erro ao tentar excluir a IMP.',
+                              variant: 'destructive',
+                            });
+                          }
+                        }}
+                      />
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
@@ -634,3 +707,46 @@ const Page = () => {
 };
 
 export default Page;
+
+const DeleteIMPDialog = ({ imp, onConfirm }: { imp: string; onConfirm: () => void }) => {
+  const [open, setOpen] = useState(false);
+
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button
+          onClick={handleOpen}
+          variant="ghost"
+          size="icon"
+          className="text-white hover:text-white bg-red hover:bg-red"
+        >
+          <Trash2 size={18} />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Excluir processo</DialogTitle>
+        </DialogHeader>
+        <div className="text-sm text-muted-foreground">
+          Tem certeza que deseja excluir o processo <strong>{imp}</strong>? Essa ação não pode ser
+          desfeita.
+        </div>
+        <DialogFooter className="mt-4">
+          <Button
+            variant="outline"
+            onClick={() => {
+              handleClose();
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button variant="destructive" onClick={onConfirm}>
+            Confirmar exclusão
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
