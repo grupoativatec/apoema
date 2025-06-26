@@ -3,7 +3,7 @@
 'use client';
 import * as XLSX from 'xlsx';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Table,
   TableBody,
@@ -50,6 +50,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { Switch } from '@/components/ui/switch';
+import { useVirtualizer } from '@tanstack/react-virtual';
 
 const formatarDataBrasileira = (data: string | Date): string => {
   if (!data) return '';
@@ -88,9 +90,12 @@ const formatarDataInternacional = (data: string) => {
 };
 
 const Page = () => {
+  const parentRef = useRef<HTMLDivElement>(null);
+
   const [data, setData] = useState<any[] | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Estado de carregamento
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const [mostrarSomenteNaoDeferidas, setMostrarSomenteNaoDeferidas] = useState(true);
 
   const [form, setForm] = useState({
     imp: '',
@@ -134,8 +139,6 @@ const Page = () => {
       if (!response.ok) throw new Error('Erro ao buscar dados das LIs deferidas.');
 
       const { dados: deferidas = [] } = await response.json();
-        console.log('LIs deferidas retornadas da API:', deferidas);
-
 
       const licencasAtualizadas = licencas.map((li) => {
         const encontrada = deferidas.find(
@@ -186,8 +189,6 @@ const Page = () => {
       console.error('Erro ao verificar LIs deferidas:', err);
     }
   };
-
-
 
   useEffect(() => {
     const fetchLicencas = async () => {
@@ -281,6 +282,46 @@ const Page = () => {
     const item = data?.find((i) => i.licencaimportacaoid === id);
     if (!item) return;
 
+    // Regex formats
+    const formatoImp = /^IMP-\d{6}$/;
+    const formatoNumeroLi = /^\d{2}\/\d{7}-\d{1}$/;
+    const formatoNumeroOrquestra = /^\d{7}$/;
+
+    // Sanitize inputs
+    const numeroOrquestra = item.numeroOrquestra?.toString().trim() || '';
+    const imp = item.imp?.trim().toUpperCase() || '';
+    const numeroLi = item.numeroLi?.trim() || '';
+
+    // Validação do Número Orquestra (7 dígitos)
+    if (!formatoNumeroOrquestra.test(numeroOrquestra)) {
+      toast({
+        title: 'Formato inválido',
+        description: 'Número do Orquestra inválido. Deve conter exatamente 7 dígitos (ex: 3350012)',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validação do formato IMP (IMP-123456)
+    if (!formatoImp.test(imp)) {
+      toast({
+        title: 'Formato inválido',
+        description: 'IMP inválido. O formato correto é: IMP-233631',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validação do formato número LI: 25/1350447-1
+    if (!formatoNumeroLi.test(numeroLi)) {
+      toast({
+        title: 'Formato inválido',
+        description: 'O número da LI deve seguir o padrão: 25/1350447-1',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       await updateLicencaImportacao(Number(id), {
         ...item,
@@ -319,7 +360,6 @@ const Page = () => {
         dataInclusaoOrquestra: formatarDataInternacional(item.dataInclusaoOrquestra),
         previsaoDeferimento: formatarDataInternacional(item.previsaoDeferimento),
       });
-      console.log(`Licença de Importação com id ${id} atualizada com sucesso.`);
     } catch (err) {
       console.error('Erro ao atualizar Licença de Importação no backend:', err);
       alert('Erro ao salvar a alteração no backend. Tente novamente.');
@@ -329,6 +369,38 @@ const Page = () => {
   // Fim da função
   const handleAdd = async () => {
     try {
+      const formatoNumeroLi = /^\d{2}\/\d{7}-\d{1}$/;
+      const formatoImp = /^IMP-\d{6}$/;
+      const formatoNumeroOrquestra = /^\d{7}$/;
+
+      if (!formatoNumeroOrquestra.test(form.numeroOrquestra.toString())) {
+        toast({
+          title: 'Formato inválido',
+          description:
+            'Número do Orquestra inválido. Deve conter exatamente 7 dígitos (ex: 3350012)',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (!formatoImp.test(form.imp)) {
+        toast({
+          title: 'Formato inválido',
+          description: 'IMP inválido. O formato correto é: IMP-233631',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (!formatoNumeroLi.test(form.numeroLi)) {
+        toast({
+          title: 'Formato inválido',
+          description: 'O número da LI deve seguir o padrão: 25/1350447-1',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const dataInclusao = formatarDataInternacional(form.dataInclusaoOrquestra);
       const dataRegistro = formatarDataInternacional(form.dataRegistroLI);
       const previsaoDeferimento = calcularPrevisaoDeferimento(dataInclusao);
@@ -338,7 +410,7 @@ const Page = () => {
         dataRegistroLI: dataRegistro,
         dataInclusaoOrquestra: dataInclusao,
         previsaoDeferimento: formatarDataInternacional(previsaoDeferimento),
-        situacao: form.situacao, // ← isso já está incluído no spread (...form), então OK
+        situacao: form.situacao,
       });
 
       const novaLI = {
@@ -368,24 +440,32 @@ const Page = () => {
     }
   };
 
-  const handleRemove = async (index: number) => {
-    const id = data![index].licencaimportacaoid;
+  const handleRemove = async (id: string) => {
     try {
       await deleteLicencaImportacao(Number(id));
-      const updatedData = data!.filter((_, i) => i !== index);
+      const updatedData = data!.filter((item) => item.licencaimportacaoid !== id);
       setData(updatedData);
     } catch (error) {
       console.error('Erro ao excluir Licença de Importação', error);
     }
   };
 
+  const termo = search.toLowerCase().replace(/\s/g, '');
+
   const filteredData = (data || []).filter((item) => {
-    const termo = search.toLowerCase();
-    return (
-      item.imp?.toLowerCase().includes(termo) ||
-      item.importador?.toLowerCase().includes(termo) ||
-      item.referenciaDoCliente?.toLowerCase().includes(termo)
-    );
+    const normalizar = (valor: string) => valor?.toLowerCase().replace(/\s/g, '') || '';
+
+    const correspondeBusca =
+      normalizar(item.imp).includes(termo) ||
+      normalizar(item.importador).includes(termo) ||
+      normalizar(item.referenciaDoCliente).includes(termo) ||
+      normalizar(item.numeroLi).includes(termo);
+
+    const naoDeferida = mostrarSomenteNaoDeferidas
+      ? item.situacao?.toLowerCase() !== 'deferida'
+      : true;
+
+    return correspondeBusca && naoDeferida;
   });
 
   const exportarParaExcel = () => {
@@ -415,9 +495,11 @@ const Page = () => {
 
   const getSituacaoColor = (situacao: string) => {
     const normalized = situacao.toLowerCase();
-    if (normalized === 'deferida') return 'text-green font-semibold';
-    if (normalized === 'indeferida' || normalized === 'cancelada') return 'text-red font-semibold';
-    return 'text-gray dark:text-white';
+
+    if (normalized === 'deferida') return 'text-[#059669] font-semibold dark:text-green'; // verde
+    if (normalized === 'indeferida' || normalized === 'cancelada')
+      return 'text-[#DC2626] dark:text-red font-semibold'; // vermelho
+    return 'text-[#374151] dark:text-white'; // cinza escuro
   };
 
   function formatColumnName(coluna: string) {
@@ -487,27 +569,13 @@ const Page = () => {
     });
   };
 
-  useEffect(() => {
-    if (form.dataInclusaoOrquestra && form.dataInclusaoOrquestra.length === 10) {
-      const dateParts = form.dataInclusaoOrquestra.split('/');
-
-      if (dateParts.length === 3) {
-        const [day, month, year] = dateParts;
-
-        const fullYear = year.length === 2 ? `20${year}` : year;
-
-        const formattedDate = `${fullYear}-${month}-${day}`;
-
-        const previsao = calcularPrevisaoDeferimento(formattedDate);
-
-        setForm((prev) => ({ ...prev, previsaoDeferimento: previsao }));
-      } else {
-        console.log('Data no formato inválido', form.dataInclusaoOrquestra);
-      }
-    } else if (form.dataInclusaoOrquestra && form.dataInclusaoOrquestra.length !== 10) {
-      console.log('A data deve ter o formato dd/mm/yyyy completo.');
-    }
-  }, [form.dataInclusaoOrquestra]);
+  // Virtualizer configurado com os dados filtrados
+  const rowVirtualizer = useVirtualizer({
+    count: filteredData.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 60,
+    overscan: 10,
+  });
 
   return (
     <div className="space-y-10 rounded-2xl bg-white p-8 shadow-md dark:border dark:border-white/20 dark:bg-zinc-900/80">
@@ -557,103 +625,130 @@ const Page = () => {
             </Select>
           </div>
 
-          <Button onClick={exportarParaExcel} disabled={isLoading}>
+          <div className="mt-4 flex items-center gap-3 uppercase">
+            <Switch
+              checked={mostrarSomenteNaoDeferidas}
+              onCheckedChange={() => setMostrarSomenteNaoDeferidas((prev) => !prev)}
+            />
+            <span className="text-sm text-muted-foreground">Somente LIs não deferidas</span>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2 uppercase">
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button disabled={isLoading} className="uppercase">
+                Adicionar LI
+              </Button>
+            </DialogTrigger>
+
+            <DialogContent className="max-w-3xl">
+              <DialogHeader>
+                <DialogTitle>Nova Licença de Importação</DialogTitle>
+              </DialogHeader>
+
+              <div className="grid grid-cols-1 gap-4 py-4 md:grid-cols-2 lg:grid-cols-3">
+                <Input
+                  placeholder="IMP-00000"
+                  value={form.imp}
+                  onChange={(e) => setForm({ ...form, imp: e.target.value })}
+                />
+                <Input
+                  placeholder="Importador"
+                  value={form.importador}
+                  onChange={(e) => setForm({ ...form, importador: e.target.value })}
+                />
+                <Input
+                  placeholder="Referência do Cliente"
+                  value={form.referenciaDoCliente}
+                  onChange={(e) => setForm({ ...form, referenciaDoCliente: e.target.value })}
+                />
+
+                <Input
+                  placeholder="Número da LI"
+                  value={form.numeroLi}
+                  onChange={(e) => setForm({ ...form, numeroLi: e.target.value })}
+                />
+
+                <Input
+                  placeholder="Número do Orquestra"
+                  type="number"
+                  value={form.numeroOrquestra || ''}
+                  onChange={(e) =>
+                    setForm({ ...form, numeroOrquestra: parseInt(e.target.value, 10) || 0 })
+                  }
+                />
+                <Input
+                  placeholder="NCM"
+                  value={form.ncm}
+                  onChange={(e) => setForm({ ...form, ncm: e.target.value })}
+                />
+
+                <Input
+                  placeholder="Data Registro LI"
+                  value={form.dataRegistroLI}
+                  onChange={(e) => setForm({ ...form, dataRegistroLI: e.target.value })}
+                />
+                <Input
+                  placeholder="Data Pagamento"
+                  value={form.dataInclusaoOrquestra}
+                  onChange={(e) => setForm({ ...form, dataInclusaoOrquestra: e.target.value })}
+                  onBlur={(e) => {
+                    const value = e.target.value;
+                    if (value && value.length === 10) {
+                      const dateParts = value.split('/');
+                      if (dateParts.length === 3) {
+                        const [day, month, year] = dateParts;
+                        const fullYear = year.length === 2 ? `20${year}` : year;
+                        const formattedDate = `${fullYear}-${month}-${day}`;
+                        const previsao = calcularPrevisaoDeferimento(formattedDate);
+                        setForm((prev) => ({ ...prev, previsaoDeferimento: previsao }));
+                      }
+                    }
+                  }}
+                />
+
+                <div className="flex flex-col gap-1">
+                  <Input
+                    type="text"
+                    value={form.previsaoDeferimento}
+                    readOnly
+                    placeholder="Previsão de Deferimento"
+                  />
+                </div>
+
+                {/* Textarea em linha separada no grid */}
+                <div className="col-span-full">
+                  <Textarea
+                    placeholder="Observações"
+                    className="min-h-[80px]"
+                    value={form.observacoes}
+                    onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Rodapé alinhado e com botões claros */}
+              <DialogFooter className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                  className="w-full sm:w-auto"
+                >
+                  Cancelar
+                </Button>
+                <Button onClick={handleAdd} className="w-full sm:w-auto">
+                  Salvar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Button onClick={exportarParaExcel} disabled={isLoading} className="uppercase">
             Exportar para Excel
           </Button>
         </div>
-
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button disabled={isLoading}>Adicionar LI</Button>
-          </DialogTrigger>
-
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>Nova Licença de Importação</DialogTitle>
-            </DialogHeader>
-
-            <div className="grid grid-cols-1 gap-4 py-4 md:grid-cols-2 lg:grid-cols-3">
-              <Input
-                placeholder="IMP-00000"
-                value={form.imp}
-                onChange={(e) => setForm({ ...form, imp: e.target.value })}
-              />
-              <Input
-                placeholder="Importador"
-                value={form.importador}
-                onChange={(e) => setForm({ ...form, importador: e.target.value })}
-              />
-              <Input
-                placeholder="Referência do Cliente"
-                value={form.referenciaDoCliente}
-                onChange={(e) => setForm({ ...form, referenciaDoCliente: e.target.value })}
-              />
-
-              <Input
-                placeholder="Número da LI"
-                value={form.numeroLi}
-                onChange={(e) => setForm({ ...form, numeroLi: e.target.value })}
-              />
-
-              <Input
-                placeholder="Número do Orquestra"
-                type="number"
-                value={form.numeroOrquestra || ''}
-                onChange={(e) =>
-                  setForm({ ...form, numeroOrquestra: parseInt(e.target.value, 10) || 0 })
-                }
-              />
-              <Input
-                placeholder="NCM"
-                value={form.ncm}
-                onChange={(e) => setForm({ ...form, ncm: e.target.value })}
-              />
-
-              <Input
-                placeholder="Data Registro LI"
-                value={form.dataRegistroLI}
-                onChange={(e) => setForm({ ...form, dataRegistroLI: e.target.value })}
-              />
-              <Input
-                placeholder="Data Pagamento"
-                value={form.dataInclusaoOrquestra}
-                onChange={(e) => setForm({ ...form, dataInclusaoOrquestra: e.target.value })}
-              />
-
-              <div className="flex flex-col gap-1">
-                <Input
-                  type="text"
-                  value={form.previsaoDeferimento}
-                  readOnly
-                  placeholder="Previsão de Deferimento"
-                />
-              </div>
-
-              {/* Textarea em linha separada no grid */}
-              <div className="col-span-full">
-                <Textarea
-                  placeholder="Observações"
-                  className="min-h-[80px]"
-                  value={form.observacoes}
-                  onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
-                />
-              </div>
-            </div>
-
-            {/* Rodapé alinhado e com botões claros */}
-            <DialogFooter className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <Button variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto">
-                Cancelar
-              </Button>
-              <Button onClick={handleAdd} className="w-full sm:w-auto">
-                Salvar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
 
-      <div className="max-h-[550px] overflow-auto rounded-2xl border">
+      <div ref={parentRef} className="max-h-[550px] overflow-auto rounded-2xl border">
         <Table>
           <TableHeader className="sticky top-0 z-10 bg-white shadow-md dark:bg-zinc-900">
             <TableRow>
@@ -671,7 +766,7 @@ const Page = () => {
               <TableHead>Ações</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
             {isLoading
               ? Array.from({ length: 5 }).map((_, index) => (
                   <TableRow key={index}>
@@ -775,7 +870,7 @@ const Page = () => {
                             handleChange('numeroLi', e.target.value, item.licencaimportacaoid)
                           }
                           onBlur={() => handleSave(item.licencaimportacaoid)}
-                          className="w-full sm:w-[110px] focus:ring-2 ring-primary"
+                          className="w-full sm:w-[130px] focus:ring-2 ring-primary"
                         />
                       </TableCell>
                     )}
@@ -856,7 +951,7 @@ const Page = () => {
                               observacoes: item.observacoes,
                             });
                           }}
-                          className={`${getSituacaoColor(item.situacao)} rounded border border-gray-300 bg-transparent px-2 py-1 dark:border-white/20 dark:bg-zinc-900 focus:ring-2 ring-primary`}
+                          className={`${getSituacaoColor(item.situacao)} rounded border uppercase border-gray-300 bg-transparent px-2 py-1 dark:border-white/20 dark:bg-zinc-900 focus:ring-2 ring-primary`}
                         >
                           <option value="analise">Em Análise</option>
                           <option value="cancelada">Cancelada</option>
@@ -903,7 +998,9 @@ const Page = () => {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleRemove(index)}>
+                              <AlertDialogAction
+                                onClick={() => handleRemove(item.licencaimportacaoid)}
+                              >
                                 Excluir
                               </AlertDialogAction>
                             </AlertDialogFooter>

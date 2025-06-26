@@ -15,7 +15,7 @@ export const SIDENAV_ITEMS: SideNavItem[] = [
       { title: 'Buscar Ref.', path: '/li/buscar-referencia' },
     ],
   },
-   {
+  {
     title: 'Kanban',
     path: '/kanban',
     icon: <Icon icon="lucide:layout-grid" width="24" height="24" />,

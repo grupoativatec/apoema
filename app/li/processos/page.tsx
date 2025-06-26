@@ -26,6 +26,7 @@ import {
   updateOrquestra,
   updateOrquestraObs,
   updateOrquestraStatus,
+  updateOrquestraStatusAnuencia,
 } from '@/lib/actions/orquestra.actions';
 import EmptyState from '@/components/EmptyState';
 import { Textarea } from '@/components/ui/textarea';
@@ -37,7 +38,13 @@ const Page = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [activeTab, setActiveTab] = useState<
-    'lis' | 'orquestra' | 'liconferencia' | 'numerario' | 'finalizados'
+    | 'lis'
+    | 'orquestra'
+    | 'liconferencia'
+    | 'numerario'
+    | 'finalizados'
+    | 'anuenciaPO'
+    | 'anuenciaPOFinalizada'
   >('lis');
   const [sortField, setSortField] = useState('status');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -74,24 +81,46 @@ const Page = () => {
         dataFinalizacao = new Date().toISOString().slice(0, 10);
       }
 
-      // Atualizar o status no banco de dados
+      // Atualiza o status no banco de dados
       await updateOrquestraStatus(imp, novoStatus, dataFinalizacao);
 
-      // Atualizar o estado localmente
+      // Atualiza localmente
       setOrquestra((prevOrquestras) =>
         prevOrquestras.map((orquestra) =>
-          orquestra.imp === imp
-            ? { ...orquestra, status: novoStatus, dataFinalizacao } // Atualiza o status e dataFinalizacao
-            : orquestra,
+          orquestra.imp === imp ? { ...orquestra, status: novoStatus, dataFinalizacao } : orquestra,
         ),
       );
 
-      // Atualizar filteredOrquestra
       setFilteredOrquestra((prevFiltered) =>
         prevFiltered.map((orquestra) =>
           orquestra.imp === imp ? { ...orquestra, status: novoStatus, dataFinalizacao } : orquestra,
         ),
       );
+
+      // Se novo status for "Fazer Orquestra", verifica se há IMP com anuencia PO que não seja FinalizadoPO
+      if (novoStatus === 'Fazer Orquestra') {
+        const impAtual = orquestra.find((o) => o.imp === imp);
+
+        if (
+          impAtual &&
+          impAtual.anuencia?.toLowerCase().includes('po') &&
+          impAtual.statusAnuencia !== 'FinalizadoPO'
+        ) {
+          await updateOrquestraStatusAnuencia(impAtual.imp, 'LiFeita-PoPendente');
+
+          setOrquestra((prev) =>
+            prev.map((o) =>
+              o.imp === impAtual.imp ? { ...o, statusAnuencia: 'LiFeita-PoPendente' } : o,
+            ),
+          );
+
+          setFilteredOrquestra((prev) =>
+            prev.map((o) =>
+              o.imp === impAtual.imp ? { ...o, statusAnuencia: 'LiFeita-PoPendente' } : o,
+            ),
+          );
+        }
+      }
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
     }
@@ -246,6 +275,26 @@ const Page = () => {
     return ['Finalizado'].includes(status);
   };
 
+  const isAnuenciaPO = (anuencia: string | null | undefined) => {
+    return anuencia?.toLowerCase().includes('po');
+  };
+
+  const handleStatusAnuenciaChange = async (imp: string, novoStatusAnuencia: string) => {
+    try {
+      await updateOrquestraStatusAnuencia(imp, novoStatusAnuencia);
+
+      // Atualizar localmente
+      setOrquestra((prev) =>
+        prev.map((o) => (o.imp === imp ? { ...o, statusAnuencia: novoStatusAnuencia } : o)),
+      );
+      setFilteredOrquestra((prev) =>
+        prev.map((o) => (o.imp === imp ? { ...o, statusAnuencia: novoStatusAnuencia } : o)),
+      );
+    } catch (error) {
+      console.error('Erro ao atualizar statusAnuencia:', error);
+    }
+  };
+
   const isLIS = (status: string | null | undefined) => {
     return (
       status === null ||
@@ -265,12 +314,30 @@ const Page = () => {
     if (activeTab === 'liconferencia') {
       return sortByDateDesc(sortedOrquestra.filter((o) => isLiconferencia(o.status)));
     }
+    if (activeTab === 'anuenciaPO') {
+      return sortByDateDesc(
+        filteredOrquestra.filter(
+          (o) => isAnuenciaPO(o.anuencia) && o.statusAnuencia !== 'FinalizadoPO',
+        ),
+      );
+    }
+
     if (activeTab === 'orquestra') {
       return sortByDateDesc(sortedOrquestra.filter((o) => isOrquestra(o.status)));
     }
     if (activeTab === 'numerario') {
       return sortByDateDesc(filteredOrquestra.filter((o) => isNumerario(o.status)));
     }
+    if (activeTab === 'anuenciaPOFinalizada') {
+      return sortByDateDesc(
+        filteredOrquestra.filter((o) => {
+          const temPO = typeof o.anuencia === 'string' && o.anuencia.toLowerCase().includes('po');
+          const estaFinalizadoPO = o.statusAnuencia === 'FinalizadoPO';
+          return temPO && estaFinalizadoPO;
+        }),
+      );
+    }
+
     if (activeTab === 'finalizados') {
       return sortByDateDescFinalizados(sortedOrquestra.filter((o) => isFinalizados(o.status)));
     }
@@ -317,20 +384,30 @@ const Page = () => {
       </div>
 
       {/* Abas estilo ClickUp */}
-      <div className="flex items-center gap-2 border-b border-border pb-2">
+      <div className="flex items-center gap-2 border-b border-border pb-2 uppercase ">
         <button
           onClick={() => setActiveTab('lis')}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all uppercase ${
             activeTab === 'lis'
               ? 'bg-primary text-white shadow-sm dark:text-black'
               : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
           }`}
         >
-          LIS a fazer
+          LI´S a fazer
+        </button>
+        <button
+          onClick={() => setActiveTab('anuenciaPO')}
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all uppercase ${
+            activeTab === 'anuenciaPO'
+              ? 'bg-primary text-white shadow-sm dark:text-black'
+              : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
+          }`}
+        >
+          PO a fazer
         </button>
         <button
           onClick={() => setActiveTab('liconferencia')}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all uppercase ${
             activeTab === 'liconferencia'
               ? 'bg-primary text-white shadow-sm dark:text-black'
               : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
@@ -340,7 +417,7 @@ const Page = () => {
         </button>
         <button
           onClick={() => setActiveTab('orquestra')}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all uppercase ${
             activeTab === 'orquestra'
               ? 'bg-primary text-white shadow-sm dark:text-black'
               : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
@@ -350,7 +427,7 @@ const Page = () => {
         </button>
         <button
           onClick={() => setActiveTab('numerario')}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all uppercase ${
             activeTab === 'numerario'
               ? 'bg-primary text-white shadow-sm dark:text-black'
               : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
@@ -359,8 +436,18 @@ const Page = () => {
           Númerario
         </button>
         <button
+          onClick={() => setActiveTab('anuenciaPOFinalizada')}
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all uppercase ${
+            activeTab === 'anuenciaPOFinalizada'
+              ? 'bg-primary text-white shadow-sm dark:text-black'
+              : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
+          }`}
+        >
+          Finalizados PO
+        </button>
+        <button
           onClick={() => setActiveTab('finalizados')}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all uppercase ${
             activeTab === 'finalizados'
               ? 'bg-primary text-white shadow-sm dark:text-black'
               : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
@@ -430,67 +517,96 @@ const Page = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Select
-                      value={item.status || 'Pendente'}
-                      onValueChange={(value) => handleStatusChange(item.imp, value)}
-                    >
-                      <SelectTrigger className="w-[130px] text-sm">
-                        <SelectValue placeholder="Selecionar status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {activeTab === 'lis' && (
-                          <>
-                            <SelectItem value="Refazer">Refazer Li</SelectItem>
-                            <SelectItem value="Aguardando informaçãoLi">
-                              Aguardando Informação
-                            </SelectItem>
-                            <SelectItem value="PendenteLi">Pendente</SelectItem>
-                            <SelectItem value="FazendoLi">Em Andamento</SelectItem>
-
-                            {/* "Pendente" aqui move o processo para a aba "Conferência LI" */}
-                            <SelectItem value="Pendente">Finalizado</SelectItem>
-                          </>
-                        )}
-                        {activeTab === 'liconferencia' && (
-                          <>
-                            <SelectItem value="Refazer">Refazer Li</SelectItem>
-                            <SelectItem value="Pendente">Pendente</SelectItem>
-                            <SelectItem value="Conferindo">Conferindo</SelectItem>
-                            <SelectItem value="Fazer Orquestra">Fazer Orquestra</SelectItem>
-                          </>
-                        )}
-                        {activeTab === 'orquestra' && (
-                          <>
-                            <SelectItem value="Fazer Orquestra">Fazer Orquestra</SelectItem>
-                            <SelectItem value="Refazer">Refazer LI</SelectItem>
-                            <SelectItem value="Aguardando informação">
-                              Aguardando Informação
-                            </SelectItem>
-                            <SelectItem value="Em andamento">Em andamento</SelectItem>
-                            {/* "Pendente" aqui move o processo para a aba "Fazer Númerario" */}
-                            <SelectItem value="Fazer Númerario">Finalizado</SelectItem>
-                          </>
-                        )}
-                        {activeTab === 'numerario' && (
-                          <>
-                            <SelectItem value="Fazer Númerario">Fazer Númerario</SelectItem>
-                            <SelectItem value="Refazer">Refazer LI</SelectItem>
-                            <SelectItem value="Fazer Orquestra">Refazer Orquestra</SelectItem>
-                            <SelectItem value="Em andamentoNumerario">Em andamento</SelectItem>
-                            <SelectItem value="Finalizado">Finalizado</SelectItem>
-                          </>
-                        )}
-                        {activeTab === 'finalizados' && (
-                          <>
-                            <SelectItem value="Refazer">Refazer LI</SelectItem>
-                            <SelectItem value="Fazer Orquestra">Refazer Orquestra</SelectItem>
-                            <SelectItem value="Fazer Númerario">Refazer Númerario</SelectItem>
-                            <SelectItem value="Finalizado">Finalizado</SelectItem>
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
+                    {activeTab === 'anuenciaPO' ? (
+                      <Select
+                        value={item.statusAnuencia || 'LiPendente-PoPendente'}
+                        onValueChange={(value) => handleStatusAnuenciaChange(item.imp, value)}
+                      >
+                        <SelectTrigger className="w-[180px] text-sm">
+                          <SelectValue placeholder="Selecionar status PO" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="LiPendente-PoPendente">
+                            LI Pendente / PO Pendente
+                          </SelectItem>
+                          <SelectItem value="LiFeita-PoPendente">LI Feita / PO Pendente</SelectItem>
+                          <SelectItem value="FinalizadoPO">Finalizado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : activeTab === 'anuenciaPOFinalizada' ? (
+                      <Select
+                        value={item.statusAnuencia || ''}
+                        onValueChange={(value) => handleStatusAnuenciaChange(item.imp, value)}
+                      >
+                        <SelectTrigger className="w-[180px] text-sm">
+                          <SelectValue placeholder="Selecionar status PO" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="LiFeita-PoPendente">Refazer PO</SelectItem>
+                          <SelectItem value="FinalizadoPO">Finalizado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Select
+                        value={item.status || 'Pendente'}
+                        onValueChange={(value) => handleStatusChange(item.imp, value)}
+                      >
+                        <SelectTrigger className="w-[130px] text-sm">
+                          <SelectValue placeholder="Selecionar status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {activeTab === 'lis' && (
+                            <>
+                              <SelectItem value="Refazer">Refazer Li</SelectItem>
+                              <SelectItem value="Aguardando informaçãoLi">
+                                Aguardando Informação
+                              </SelectItem>
+                              <SelectItem value="PendenteLi">Pendente</SelectItem>
+                              <SelectItem value="FazendoLi">Em Andamento</SelectItem>
+                              <SelectItem value="Pendente">Finalizado</SelectItem>
+                            </>
+                          )}
+                          {activeTab === 'liconferencia' && (
+                            <>
+                              <SelectItem value="Refazer">Refazer Li</SelectItem>
+                              <SelectItem value="Pendente">Pendente</SelectItem>
+                              <SelectItem value="Conferindo">Conferindo</SelectItem>
+                              <SelectItem value="Fazer Orquestra">Fazer Orquestra</SelectItem>
+                            </>
+                          )}
+                          {activeTab === 'orquestra' && (
+                            <>
+                              <SelectItem value="Fazer Orquestra">Fazer Orquestra</SelectItem>
+                              <SelectItem value="Refazer">Refazer LI</SelectItem>
+                              <SelectItem value="Aguardando informação">
+                                Aguardando Informação
+                              </SelectItem>
+                              <SelectItem value="Em andamento">Em andamento</SelectItem>
+                              <SelectItem value="Fazer Númerario">Finalizado</SelectItem>
+                            </>
+                          )}
+                          {activeTab === 'numerario' && (
+                            <>
+                              <SelectItem value="Fazer Númerario">Fazer Númerario</SelectItem>
+                              <SelectItem value="Refazer">Refazer LI</SelectItem>
+                              <SelectItem value="Fazer Orquestra">Refazer Orquestra</SelectItem>
+                              <SelectItem value="Em andamentoNumerario">Em andamento</SelectItem>
+                              <SelectItem value="Finalizado">Finalizado</SelectItem>
+                            </>
+                          )}
+                          {activeTab === 'finalizados' && (
+                            <>
+                              <SelectItem value="Refazer">Refazer LI</SelectItem>
+                              <SelectItem value="Fazer Orquestra">Refazer Orquestra</SelectItem>
+                              <SelectItem value="Fazer Númerario">Refazer Númerario</SelectItem>
+                              <SelectItem value="Finalizado">Finalizado</SelectItem>
+                            </>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </TableCell>
+
                   <TableCell>
                     <Textarea
                       value={item.obs || ''}

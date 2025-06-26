@@ -5,7 +5,14 @@ import successLis from '../public/animations/success.json';
 import successLiconferencia from '../public/animations/successLiconferencia.json';
 
 interface EmptyStateProps {
-  tab: 'lis' | 'liconferencia' | 'orquestra' | 'numerario' | 'finalizados';
+  tab:
+    | 'lis'
+    | 'orquestra'
+    | 'liconferencia'
+    | 'numerario'
+    | 'finalizados'
+    | 'anuenciaPO'
+    | 'anuenciaPOFinalizada';
 }
 
 const messagesByTab: Record<EmptyStateProps['tab'], string[]> = {
@@ -15,6 +22,11 @@ const messagesByTab: Record<EmptyStateProps['tab'], string[]> = {
     'Tudo resolvido no LIS. Excelente trabalho! 🎯',
   ],
   liconferencia: [
+    'Tudo conferido por aqui. 👀',
+    'Nenhuma LI pendente de conferência. 🧾',
+    'Conferência em dia. Siga com confiança! ✅',
+  ],
+  anuenciaPO: [
     'Tudo conferido por aqui. 👀',
     'Nenhuma LI pendente de conferência. 🧾',
     'Conferência em dia. Siga com confiança! ✅',
@@ -30,6 +42,11 @@ const messagesByTab: Record<EmptyStateProps['tab'], string[]> = {
     'Tudo orquestrado com maestria! 🎻',
     'Processos finalizados. Respire fundo. 🌿',
   ],
+  anuenciaPOFinalizada: [
+    'Nada pendente na orquestra. 🎼',
+    'Tudo orquestrado com maestria! 🎻',
+    'Processos finalizados. Respire fundo. 🌿',
+  ],
 };
 
 const animationsByTab: Record<EmptyStateProps['tab'], object> = {
@@ -38,6 +55,8 @@ const animationsByTab: Record<EmptyStateProps['tab'], object> = {
   orquestra: successLiconferencia,
   numerario: successLiconferencia,
   finalizados: successLiconferencia,
+  anuenciaPO: successLiconferencia,
+  anuenciaPOFinalizada: successLiconferencia,
 };
 
 export default function EmptyState({ tab }: EmptyStateProps) {
