@@ -20,11 +20,13 @@ export const SIDENAV_ITEMS: SideNavItem[] = [
     path: '/kanban',
     icon: <Icon icon="lucide:layout-grid" width="24" height="24" />,
   },
-  // {
-  //   title: "Etiquetas",
-  //   path: "/etiquetas/controle",
-  //   icon: <Icon icon="lucide:tag" width="24" height="24" />,
-  // },
+  {
+    title: 'Etiquetas',
+    path: '/etiquetas',
+    icon: <Icon icon="lucide:tag" width="24" height="24" />,
+    submenu: true,
+    subMenuItems: [{ title: 'Formularios', path: '/etiquetas/admin' }],
+  },
   {
     title: 'Certificados',
     path: '/certificados',
