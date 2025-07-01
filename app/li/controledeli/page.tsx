@@ -212,25 +212,34 @@ const Page = () => {
     fetchLicencas();
   }, []);
 
-  const handleDuplicate = (index: number) => {
-    const original = data![index];
+  const handleDuplicate = (id: string | number) => {
+    const original = data?.find((item) => item.licencaimportacaoid === id);
+    if (!original) {
+      toast({
+        title: 'Erro ao duplicar',
+        description: 'Item original não encontrado.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-    // Desestruturação para remover o id e outros campos não necessários
     const { licencaimportacaoid, $databaseId, $collectionId, $createdAt, $updatedAt, ...cleaned } =
       original;
 
-    // Preparando o novo item, excluindo o id
-    const novoItem = {
-      ...cleaned,
-      dataRegistroLI: formatarDataInternacional(cleaned.dataRegistroLI),
-      dataInclusaoOrquestra: formatarDataInternacional(cleaned.dataInclusaoOrquestra),
-      previsaoDeferimento: formatarDataInternacional(cleaned.previsaoDeferimento),
+    const formatarOuVazio = (data: string) => {
+      const iso = formatarDataInternacional(data);
+      return isNaN(Date.parse(iso)) ? '' : iso;
     };
 
-    // Chama a função do backend para criar a nova Licença de Importação
+    const novoItem = {
+      ...cleaned,
+      dataRegistroLI: formatarOuVazio(cleaned.dataRegistroLI),
+      dataInclusaoOrquestra: formatarOuVazio(cleaned.dataInclusaoOrquestra),
+      previsaoDeferimento: formatarOuVazio(cleaned.previsaoDeferimento),
+    };
+
     createLicencaImportacao(novoItem)
       .then((res) => {
-        // Formatar as datas para o formato brasileiro
         const novo = {
           ...res,
           dataRegistroLI: formatarDataBrasileira(res.dataRegistroLI),
@@ -238,11 +247,20 @@ const Page = () => {
           previsaoDeferimento: formatarDataBrasileira(res.previsaoDeferimento),
         };
 
-        // Adicionar o novo item ao estado de dados
         setData((prev) => [...(prev || []), novo]);
+
+        toast({
+          title: 'LI duplicada com sucesso',
+          description: `A LI ${res.numeroLi} foi adicionada.`,
+        });
       })
       .catch((err) => {
         console.error('Erro ao duplicar Licença de Importação:', err);
+        toast({
+          title: 'Erro ao duplicar LI',
+          description: 'Verifique os dados do item original ou tente novamente mais tarde.',
+          variant: 'destructive',
+        });
       });
   };
 
@@ -347,25 +365,6 @@ const Page = () => {
     }
   };
 
-  // Função para salvar o campo de data
-  const handleDateBlur = async (id: number) => {
-    const item = data?.find((item) => item.licencaimportacaoid === id);
-    if (!item) return;
-
-    try {
-      await updateLicencaImportacao(Number(id), {
-        ...item,
-        numeroOrquestra: parseInt(item.numeroOrquestra, 10) || 0,
-        dataRegistroLI: formatarDataInternacional(item.dataRegistroLI),
-        dataInclusaoOrquestra: formatarDataInternacional(item.dataInclusaoOrquestra),
-        previsaoDeferimento: formatarDataInternacional(item.previsaoDeferimento),
-      });
-    } catch (err) {
-      console.error('Erro ao atualizar Licença de Importação no backend:', err);
-      alert('Erro ao salvar a alteração no backend. Tente novamente.');
-    }
-  };
-
   // Fim da função
   const handleAdd = async () => {
     try {
@@ -442,11 +441,21 @@ const Page = () => {
 
   const handleRemove = async (id: string) => {
     try {
+      const itemRemovido = data?.find((item) => item.licencaimportacaoid === id);
+
       await deleteLicencaImportacao(Number(id));
       const updatedData = data!.filter((item) => item.licencaimportacaoid !== id);
       setData(updatedData);
+
+      toast({
+        title: `LI ${itemRemovido?.numeroLi || ''} (${itemRemovido?.imp || ''}) deletada com sucesso`,
+      });
     } catch (error) {
-      console.error('Erro ao excluir Licença de Importação', error);
+      toast({
+        title: 'Erro ao excluir LI',
+        description: 'Não foi possível remover a licença. Tente novamente.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -976,7 +985,7 @@ const Page = () => {
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
-                          onClick={() => handleDuplicate(index)}
+                          onClick={() => handleDuplicate(item.licencaimportacaoid)}
                           className="w-[40px] dark:bg-zinc-800 dark:text-white"
                         >
                           <FaCopy />
