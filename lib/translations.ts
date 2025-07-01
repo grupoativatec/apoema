@@ -38,12 +38,12 @@ export const translations = {
     invalidEmail: 'Digite um nome válido.',
     faqTitle: 'Dúvidas frequentes',
     faq: {
-      termosTitle: 'Pra que serve o termo?',
+      termosTitle: 'Para o que serve o termo?',
       termosText:
-        'O termo garante que o cliente esteja ciente das normas técnicas exigidas por certificações como INMETRO e ANATEL, e também define responsabilidades legais sobre o uso das etiquetas.',
-      contatoTitle: 'Como entro em contato com vocês?',
+        'O termo garante que o cliente esteja ciente das normas técnicas exigidas pelo os órgãos anuentes como INMETRO e ANATEL, e também define responsabilidades legais sobre o uso das etiquetas.',
+      contatoTitle: 'Nossos contatos',
       contatoText:
-        'Você pode enviar um e-mail para certificacao@grupoativa.net ou falar com a gente via WhatsApp.',
+        'Você pode enviar um e-mail para certificacao@grupoativa.net ou falar com a gente através do WhatsApp.',
       contatoEmail: 'certificacao@grupoativa.net',
       contatoWhatsappText: 'Olá, gostaria de falar com a Apoema!',
     },
