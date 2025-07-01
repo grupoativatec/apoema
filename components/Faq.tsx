@@ -15,14 +15,27 @@ import {
 } from '@/components/ui/accordion';
 import { useState } from 'react';
 import { Button } from './ui/button';
-import { GlobeIcon, HelpCircleIcon } from 'lucide-react';
+import { HelpCircleIcon } from 'lucide-react';
+import { translations } from '@/lib/translations';
+
+function getCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? match[2] : null;
+}
+
+function getValidLocale(): 'pt' | 'en' | 'zh' {
+  const raw = getCookie('locale');
+  if (raw === 'pt' || raw === 'en' || raw === 'zh') return raw;
+  return 'pt';
+}
 
 export function Faq() {
   const [open, setOpen] = useState(false);
+  const locale = getValidLocale();
+  const t = translations[locale];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {/* Botão com ícone flutuante */}
       <DialogTrigger asChild>
         <Button
           variant="outline"
@@ -36,29 +49,27 @@ export function Faq() {
 
       <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>Dúvidas frequentes</DialogTitle>
+          <DialogTitle>{t.faqTitle}</DialogTitle>
         </DialogHeader>
 
         <Accordion type="single" collapsible className="w-full mt-4">
           <AccordionItem value="termos">
-            <AccordionTrigger>Pra que serve o termo?</AccordionTrigger>
-            <AccordionContent>
-              O termo garante que o cliente esteja ciente das normas técnicas exigidas por
-              certificações como INMETRO e ANATEL, e também define responsabilidades legais sobre o
-              uso das etiquetas.
-            </AccordionContent>
+            <AccordionTrigger>{t.faq.termosTitle}</AccordionTrigger>
+            <AccordionContent>{t.faq.termosText}</AccordionContent>
           </AccordionItem>
 
           <AccordionItem value="contato">
-            <AccordionTrigger>Como entro em contato com vocês?</AccordionTrigger>
+            <AccordionTrigger>{t.faq.contatoTitle}</AccordionTrigger>
             <AccordionContent>
-              Você pode enviar um e-mail para{' '}
-              <a href="mailto:certificacao@grupoativa.net" className="underline text-primary">
-                certificacao@grupoativa.net
-              </a>{' '}
-              ou falar com a gente via{' '}
+              {t.faq.contatoText.split('certificacao@grupoativa.net')[0]}
+              <a href={`mailto:${t.faq.contatoEmail}`} className="underline text-primary">
+                {t.faq.contatoEmail}
+              </a>
+              {' ou '}
               <a
-                href="https://wa.me/554792416708?text=Olá%2C+gostaria+de+falar+com+a+Apoema!"
+                href={`https://wa.me/554792416708?text=${encodeURIComponent(
+                  t.faq.contatoWhatsappText,
+                )}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline text-primary"
