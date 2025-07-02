@@ -651,7 +651,23 @@ const Page = () => {
                   </TableCell>
 
                   {isAdminUser && (
-                    <TableCell className="text-center flex items-center">
+                    <TableCell className="text-center flex items-center gap-2">
+                      <EditIMPDialog
+                        item={item}
+                        onSave={(updatedItem) => {
+                          setOrquestra((prev) =>
+                            prev.map((o) => (o.imp === updatedItem.imp ? updatedItem : o)),
+                          );
+                          setFilteredOrquestra((prev) =>
+                            prev.map((o) => (o.imp === updatedItem.imp ? updatedItem : o)),
+                          );
+
+                          toast({
+                            description: `${updatedItem.imp} atualizado com sucesso!`,
+                          });
+                        }}
+                      />
+
                       <DeleteIMPDialog
                         imp={item.imp}
                         onConfirm={async () => {
@@ -711,16 +727,13 @@ export default Page;
 const DeleteIMPDialog = ({ imp, onConfirm }: { imp: string; onConfirm: () => void }) => {
   const [open, setOpen] = useState(false);
 
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
-          onClick={handleOpen}
-          variant="ghost"
+          onClick={() => setOpen(true)}
           size="icon"
-          className="text-white hover:text-white bg-red hover:bg-red"
+          className="w-[40px] dark:bg-zinc-800 dark:text-white"
         >
           <Trash2 size={18} />
         </Button>
@@ -734,16 +747,158 @@ const DeleteIMPDialog = ({ imp, onConfirm }: { imp: string; onConfirm: () => voi
           desfeita.
         </div>
         <DialogFooter className="mt-4">
-          <Button
-            variant="outline"
-            onClick={() => {
-              handleClose();
-            }}
-          >
+          <Button variant="outline" onClick={() => setOpen(false)}>
             Cancelar
           </Button>
-          <Button variant="destructive" onClick={onConfirm}>
+          <Button
+            variant="destructive"
+            onClick={() => {
+              onConfirm();
+              setOpen(false); // fecha após confirmar
+            }}
+          >
             Confirmar exclusão
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const EditIMPDialog = ({ item, onSave }: { item: any; onSave: (updated: any) => void }) => {
+  const [open, setOpen] = useState(false);
+  const [formData, setFormData] = useState({ ...item });
+
+  const formatBRDate = (dateStr?: string) => {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr + 'T00:00:00');
+    return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('pt-BR');
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev: any) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = async () => {
+    try {
+      const res = await fetch('/api/processos/edit-orquestra', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData }),
+      });
+
+      const text = await res.text();
+
+      try {
+        const result = JSON.parse(text);
+        if (result.success) {
+          onSave(result.updated);
+          setOpen(false);
+        }
+        // continue normalmente...
+      } catch (err) {
+        console.error('Erro ao fazer parse do JSON:', err);
+      }
+    } catch (err) {
+      console.error('Erro ao editar IMP:', err);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="icon" className="w-[40px] dark:bg-zinc-800 dark:text-white">
+          <Pencil size={18} />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Editar Processo</DialogTitle>
+        </DialogHeader>
+
+        <div className="grid gap-3">
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-muted-foreground">IMP</label>
+            <Input
+              name="imp"
+              value={formData.imp || ''}
+              onChange={handleChange}
+              placeholder="IMP"
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-muted-foreground">
+              Referência do Cliente
+            </label>
+            <Input
+              name="referencia"
+              value={formData.referencia || ''}
+              onChange={handleChange}
+              placeholder="Referência"
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-muted-foreground">Exportador</label>
+            <Input
+              name="exportador"
+              value={formData.exportador || ''}
+              onChange={handleChange}
+              placeholder="Exportador"
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-muted-foreground">Importador</label>
+            <Input
+              name="importador"
+              value={formData.importador || ''}
+              onChange={handleChange}
+              placeholder="Importador"
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-muted-foreground">Data de Recebimento</label>
+            <Input
+              name="recebimento"
+              value={formatBRDate(formData.recebimento)}
+              onChange={handleChange}
+              placeholder="dd/mm/aaaa"
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-muted-foreground">
+              Data Prev. de Chegada
+            </label>
+            <Input
+              name="chegada"
+              value={formatBRDate(formData.chegada)}
+              onChange={handleChange}
+              placeholder="dd/mm/aaaa"
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-muted-foreground">Destino</label>
+            <Input
+              name="destino"
+              value={formData.destino || ''}
+              onChange={handleChange}
+              placeholder="Destino"
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="mt-4">
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSave} className="bg-sky-500 hover:bg-sky-400 text-white">
+            Salvar alterações
           </Button>
         </DialogFooter>
       </DialogContent>

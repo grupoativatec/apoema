@@ -2,9 +2,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 'use server';
 
-import { createAdminClient } from '@/lib/appwrite';
-import { appwriteConfig } from '@/lib/appwrite/config';
-import { ID, Query } from 'node-appwrite';
 import { pool } from '../database/db';
 
 const normalizeDateToISO = (dateStr: string) => {
