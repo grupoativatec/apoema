@@ -97,6 +97,33 @@ export default function DownloadByCodePage() {
     setLocale(newLocale);
   };
 
+  useEffect(() => {
+    async function checkDownloadStatus() {
+      try {
+        const res = await fetch(`/api/etiquetas/checkDownloadStatus?code=${code}`);
+
+        const text = await res.text(); // tenta ler como texto
+        console.log('Resposta recebida:', text);
+
+        // Se status OK, tenta parsear como JSON
+        if (res.ok) {
+          const data = JSON.parse(text);
+          if (data.validated) {
+            setHasAcceptedTerms(true);
+            setName(data.name || '');
+            setLink(data.link);
+          }
+        } else {
+          console.error('Erro na resposta da API:', res.status);
+        }
+      } catch (err) {
+        console.error('Erro ao verificar status do código:', err);
+      }
+    }
+
+    checkDownloadStatus();
+  }, [code]);
+
   return (
     <div className="bg-gray-100 dark:border relative rounded-md dark:bg-zinc-900 flex flex-col md:items-center md:justify-center md:px-4 md:py-12">
       <div className="top-6 fixed right-6 z-50 flex gap-2">
@@ -123,16 +150,49 @@ export default function DownloadByCodePage() {
         <div className="flex flex-col justify-center p-8 sm:p-12 w-full">
           <div className="w-full max-w-4xl mx-auto space-y-6 min-h-[500px] flex flex-col justify-center">
             {link ? (
-              <div className="space-y-4 text-center">
-                <h2 className="text-2xl font-bold">{t.linkReady}</h2>
-                <a
-                  href={link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block text-primary underline"
-                >
-                  {t.downloadLink}
+              <div className="space-y-6 text-center bg-white dark:bg-zinc-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-zinc-700 transition">
+                <h2 className="text-3xl font-bold text-gray-800 dark:text-white">{t.linkReady}</h2>
+
+                <a href={link} target="_blank" rel="noopener noreferrer">
+                  <Button className="bg-gradient-to-r to-orange-500 mt-5 text-lg font-semibold py-3 px-6 rounded-md shadow hover:brightness-110 transition-all duration-200">
+                    {t.downloadLink}
+                  </Button>
                 </a>
+
+                <div>
+                  <button
+                    onClick={() => setShowTermsModal(true)}
+                    className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white transition"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M12 20h9"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M12 4h9"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M12 4v16"
+                      />
+                    </svg>
+                    {t.readTermsAgain || 'Ler os termos novamente'}
+                  </button>
+                </div>
               </div>
             ) : hasAcceptedTerms ? (
               <form onSubmit={handleSubmit} className="space-y-6">

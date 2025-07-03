@@ -37,6 +37,7 @@ export const translations = {
     acceptTermsCheckbox: 'Li e aceito os termos de uso',
     invalidEmail: 'Digite um nome válido.',
     faqTitle: 'Dúvidas frequentes',
+    readTermsAgain: 'Ler os temos novamente',
     faq: {
       termosTitle: 'Para o que serve o termo?',
       termosText:
@@ -87,6 +88,7 @@ export const translations = {
     acceptTermsCheckbox: 'I have read and accept the terms of use',
     invalidEmail: 'Enter a valid name.',
     faqTitle: 'Frequently Asked Questions',
+    readTermsAgain: 'Read the terms again',
     faq: {
       termosTitle: 'What is the purpose of the terms?',
       termosText:
@@ -134,6 +136,7 @@ export const translations = {
     acceptTermsCheckbox: '我已阅读并接受使用条款',
     invalidEmail: '请输入有效的姓名。',
     faqTitle: '常见问题',
+    readTermsAgain: '重新阅读条款',
     faq: {
       termosTitle: '这些条款的用途是什么？',
       termosText:

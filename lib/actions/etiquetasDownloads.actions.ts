@@ -94,17 +94,45 @@ export const updateDownload = async ({
   link,
 }: {
   id: string;
-  pedido: string;
-  client: string;
-  link: string;
+  pedido?: string;
+  client?: string;
+  link?: string;
 }): Promise<UpdateDownloadResponse> => {
   try {
-    const acceptedName = client.toLowerCase().replace(/\s/g, '') + '@example.com';
+    const fields: string[] = [];
+    const values: any[] = [];
 
-    await pool.query(
-      'UPDATE apoema.EtiquetasDownloads SET pedido = ?, client = ?, link = ?, accepted_name = ? WHERE id = ?',
-      [pedido, client, link, acceptedName, id],
-    );
+    if (pedido && pedido.trim()) {
+      fields.push('pedido = ?');
+      values.push(pedido.trim());
+    }
+
+    if (client && client.trim()) {
+      fields.push('client = ?');
+      values.push(client.trim());
+
+      // Atualiza accepted_name com base no client
+      fields.push('accepted_name = ?');
+      values.push(client.toLowerCase().replace(/\s/g, '') + '@example.com');
+    }
+
+    if (link && link.trim()) {
+      fields.push('link = ?');
+      values.push(link.trim());
+    }
+
+    if (fields.length === 0) {
+      return {
+        success: false,
+        message: 'Nenhum campo válido para atualizar.',
+      };
+    }
+
+    // Finaliza a query com WHERE id
+    const sql = `UPDATE apoema.EtiquetasDownloads SET ${fields.join(', ')} WHERE id = ?`;
+    values.push(id);
+
+    await pool.query(sql, values);
 
     return { success: true as const };
   } catch (error) {
@@ -129,5 +157,35 @@ export const deleteDownload = async (id: string): Promise<DeleteDownloadResponse
       success: false as const,
       message: 'Erro ao deletar download',
     };
+  }
+};
+
+export const getDownloadStatusByCode = async (code: string): Promise<EtiquetasDownload | null> => {
+  try {
+    const [rows]: any = await pool.query(
+      `
+        SELECT id, pedido, client, link, accepted_at as acceptedAt, accepted_name as acceptedName
+        FROM apoema.EtiquetasDownloads
+        WHERE id = ?
+        LIMIT 1
+      `,
+      [code],
+    );
+
+    if (rows.length === 0) return null;
+
+    const row = rows[0];
+
+    return {
+      id: row.id,
+      pedido: row.pedido,
+      client: row.client,
+      link: row.link,
+      acceptedAt: row.acceptedAt ? new Date(row.acceptedAt) : null,
+      acceptedName: row.acceptedName,
+    };
+  } catch (error) {
+    console.error('Erro ao buscar status do download:', error);
+    return null;
   }
 };

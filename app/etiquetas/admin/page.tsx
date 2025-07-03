@@ -294,10 +294,11 @@ const Page = () => {
                                 value={editingItem?.pedido || ''}
                                 onChange={(e) =>
                                   setEditingItem(
-                                    (prev) => prev && { ...prev, code: e.target.value },
+                                    (prev) => prev && { ...prev, pedido: e.target.value },
                                   )
                                 }
                               />
+
                               <Input
                                 placeholder="Nome do Cliente"
                                 value={editingItem?.client || ''}
