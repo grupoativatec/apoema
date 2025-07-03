@@ -11,7 +11,7 @@ const layout = async ({ children }: { children: React.ReactNode }) => {
   if (!currentUser) return redirect('/sign-in');
 
   return (
-    <main className="h-screen bg-light-400 bg-center dark:bg-zinc-900">
+    <main className="h-screen bg-light-400 bg-center dark:bg-zinc-900 ">
       <Sidebar
         name={currentUser.nome}
         {...currentUser}

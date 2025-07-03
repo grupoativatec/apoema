@@ -50,8 +50,9 @@ const Page = () => {
   const { toast } = useToast();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<EtiquetasDownload | null>(null);
+  const [linkStatuses, setLinkStatuses] = useState<Record<string, boolean>>({});
+  const [isSaving, setIsSaving] = useState(false);
 
-  const [code, setCode] = useState('');
   const [client, setClient] = useState('');
   const [link, setLink] = useState('');
 
@@ -70,6 +71,7 @@ const Page = () => {
       return;
     }
 
+    setIsSaving(true);
     const response = await updateDownload({
       id: editingItem.id,
       pedido: editingItem.pedido,
@@ -78,11 +80,18 @@ const Page = () => {
     });
 
     if (response?.success) {
-      setDownloads((prev) => prev.map((item) => (item.id === editingItem.id ? editingItem : item)));
+      try {
+        const updated = await getAllDownloads(); // pega todos os dados atualizados
+        setDownloads(updated);
+        await checkAllLinks(updated); // revalida status dos links
+      } catch (error) {
+        console.error('Erro ao recarregar após update:', error);
+      }
+
       setEditDialogOpen(false);
       toast({
-        title: 'Download atualizado',
-        description: `Cliente ${editingItem.client} atualizado com sucesso.`,
+        title: 'Formulario atualizado',
+        description: `Pedido ${editingItem.pedido} atualizado com sucesso.`,
       });
     } else {
       toast({
@@ -91,6 +100,7 @@ const Page = () => {
         variant: 'destructive',
       });
     }
+    setIsSaving(false);
   };
 
   const handleAddDownload = async () => {
@@ -113,8 +123,8 @@ const Page = () => {
       setOpen(false);
 
       toast({
-        title: 'Download adicionado',
-        description: `O link do cliente ${client} foi registrado com sucesso.`,
+        title: 'Formulario adicionado',
+        description: `O link do pedido ${pedido} foi registrado com sucesso.`,
       });
     } else {
       toast({
@@ -141,17 +151,50 @@ const Page = () => {
     }
   };
 
+  const checkIfLinkIsOnline = async (url: string): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/validate-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+
+      const data = await res.json();
+      return data.online === true;
+    } catch (err) {
+      console.error('Erro na verificação do link:', err);
+      return false;
+    }
+  };
+
+  const checkAllLinks = async (downloads: EtiquetasDownload[]) => {
+    const statusMap: Record<string, boolean> = {};
+
+    await Promise.all(
+      downloads.map(async (dl) => {
+        const isOnline = await checkIfLinkIsOnline(dl.link);
+        statusMap[dl.id] = isOnline;
+      }),
+    );
+
+    setLinkStatuses(statusMap);
+  };
+
   useEffect(() => {
     const fetchDownloads = async () => {
       try {
+        setIsLoading(true); // ← Início do carregamento
         const data = await getAllDownloads();
         setDownloads(data);
+        await checkAllLinks(data);
       } catch (error) {
         toast({
-          title: 'Erro ao carregar downloads',
-          description: 'Verifique sua conexão ou tente novamente mais tarde.',
+          title: 'Erro',
+          description: 'Não foi possível carregar os dados.',
           variant: 'destructive',
         });
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -218,13 +261,28 @@ const Page = () => {
                   <TableHead>Data de Aceite</TableHead>
                   <TableHead>Nome Preenchido</TableHead>
                   <TableHead>Formulário</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {downloads.map((dl) => (
                   <TableRow key={dl.id}>
-                    <TableCell>{dl.pedido}</TableCell>
-                    <TableCell>{dl.client}</TableCell>
+                    <TableCell>
+                      <div
+                        className="max-w-[250px] truncate whitespace-nowrap overflow-hidden"
+                        title={dl.pedido}
+                      >
+                        {dl.pedido}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div
+                        className="max-w-[160px] truncate whitespace-nowrap overflow-hidden"
+                        title={dl.client}
+                      >
+                        {dl.client}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <a
                         href={dl.link}
@@ -243,14 +301,19 @@ const Page = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      {dl.acceptedName ? (
-                        dl.acceptedName
-                      ) : (
-                        <span className="text-gray-400 italic">Não preenchido</span>
-                      )}
+                      <div
+                        className="max-w-[160px] truncate whitespace-nowrap overflow-hidden"
+                        title={dl.acceptedName || undefined}
+                      >
+                        {dl.acceptedName ? (
+                          dl.acceptedName
+                        ) : (
+                          <span className="text-gray-400 italic">Não preenchido</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex justify-center items-center h-full">
                         {/* Acessar formulário */}
                         <a
                           href={`/etiquetas/download/${dl.id}`}
@@ -319,7 +382,16 @@ const Page = () => {
                               />
                             </div>
                             <DialogFooter>
-                              <Button onClick={handleSaveEdit}>Salvar</Button>
+                              <Button onClick={handleSaveEdit} disabled={isSaving}>
+                                {isSaving ? (
+                                  <span className="flex items-center gap-2">
+                                    <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                                    Salvando...
+                                  </span>
+                                ) : (
+                                  'Salvar'
+                                )}
+                              </Button>
                             </DialogFooter>
                           </DialogContent>
                         </Dialog>
@@ -335,19 +407,42 @@ const Page = () => {
                               toast({
                                 title: 'Removido',
                                 description: `Pedido ${dl.pedido} foi removido.`,
+                                variant: 'destructive',
                               });
                             } else {
                               toast({
                                 title: 'Erro',
-                                description: 'Não foi possível remover o download.',
+                                description: 'Não foi possível remover o formulario.',
                                 variant: 'destructive',
                               });
                             }
                           }}
                           title="Excluir"
                         >
-                          <Trash2 size={18} className="text-red-500" />
+                          <Trash2 size={18} />
                         </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-center items-center h-full">
+                        <span
+                          className="inline-block h-3 w-3 rounded-full"
+                          title={
+                            linkStatuses[dl.id] === true
+                              ? 'Link online'
+                              : linkStatuses[dl.id] === false
+                                ? 'Link offline'
+                                : 'Verificando status...'
+                          }
+                          style={{
+                            backgroundColor:
+                              linkStatuses[dl.id] === true
+                                ? '#22c55e' // verde
+                                : linkStatuses[dl.id] === false
+                                  ? '#ef4444' // vermelho
+                                  : '#a1a1aa', // cinza
+                          }}
+                        />
                       </div>
                     </TableCell>
                   </TableRow>
