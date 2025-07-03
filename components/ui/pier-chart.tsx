@@ -62,15 +62,20 @@ export function TotalProcessos() {
       const cached = Cookies.get('processo_status');
 
       if (cached) {
-        const parsed = JSON.parse(cached);
-        const isValid = Date.now() < parsed.expiration;
+        try {
+          const parsed = JSON.parse(cached);
+          const isValid = Date.now() < parsed.expiration;
 
-        if (isValid) {
-          setChartData(parsed.data);
-          setTotal(parsed.data.reduce((acc: number, curr: any) => acc + curr.count, 0));
-          setLoading(false);
-          return;
-        } else {
+          if (isValid) {
+            setChartData(parsed.data);
+            setTotal(parsed.data.reduce((acc: number, curr: any) => acc + curr.count, 0));
+            setLoading(false);
+            return;
+          } else {
+            Cookies.remove('processo_status');
+          }
+        } catch (err) {
+          console.error('Erro ao fazer parse do cookie processo_status:', err);
           Cookies.remove('processo_status');
         }
       }

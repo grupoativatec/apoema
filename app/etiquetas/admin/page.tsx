@@ -313,7 +313,7 @@ const Page = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex justify-center items-center h-full">
+                      <div className="flex  items-center h-full">
                         {/* Acessar formulário */}
                         <a
                           href={`/etiquetas/download/${dl.id}`}
