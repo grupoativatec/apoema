@@ -32,6 +32,9 @@ import {
   CreateDownloadResponse,
 } from '@/lib/actions/etiquetasDownloads.actions';
 
+import { useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
+
 export interface EtiquetasDownload {
   id: string;
   pedido: string;
@@ -55,6 +58,16 @@ const Page = () => {
 
   const [client, setClient] = useState('');
   const [link, setLink] = useState('');
+
+  const parentRef = useRef<HTMLDivElement>(null);
+  const [itemToDelete, setItemToDelete] = useState<EtiquetasDownload | null>(null);
+
+  const rowVirtualizer = useVirtualizer({
+    count: downloads.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 70,
+    overscan: 10,
+  });
 
   const handleEditClick = (item: EtiquetasDownload) => {
     setEditingItem(item);
@@ -244,7 +257,7 @@ const Page = () => {
           </Dialog>
         </div>
 
-        <div className="max-h-[550px] overflow-auto rounded-2xl border">
+        <div className="rounded-2xl border" ref={parentRef}>
           {isLoading ? (
             <div className="space-y-4 p-4">
               <Skeleton className="h-12 w-full" />
@@ -264,194 +277,228 @@ const Page = () => {
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {downloads.map((dl) => (
-                  <TableRow key={dl.id}>
-                    <TableCell>
-                      <div
-                        className="max-w-[250px] truncate whitespace-nowrap overflow-hidden"
-                        title={dl.pedido}
-                      >
-                        {dl.pedido}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div
-                        className="max-w-[160px] truncate whitespace-nowrap overflow-hidden"
-                        title={dl.client}
-                      >
-                        {dl.client}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <a
-                        href={dl.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 underline"
-                      >
-                        Abrir
-                      </a>
-                    </TableCell>
-                    <TableCell>
-                      {dl.acceptedAt ? (
-                        format(new Date(dl.acceptedAt), 'dd/MM/yyyy HH:mm')
-                      ) : (
-                        <span className="text-gray-400 italic">Não preenchido</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div
-                        className="max-w-[160px] truncate whitespace-nowrap overflow-hidden"
-                        title={dl.acceptedName || undefined}
-                      >
-                        {dl.acceptedName ? (
-                          dl.acceptedName
+              <TableBody
+                style={{
+                  height: `${rowVirtualizer.getTotalSize()}px`,
+                  position: 'relative',
+                }}
+              >
+                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const dl = downloads[virtualRow.index];
+                  return (
+                    <TableRow key={dl.id}>
+                      <TableCell>
+                        <div
+                          className="max-w-[250px] truncate whitespace-nowrap overflow-hidden"
+                          title={dl.pedido}
+                        >
+                          {dl.pedido}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div
+                          className="max-w-[160px] truncate whitespace-nowrap overflow-hidden"
+                          title={dl.client}
+                        >
+                          {dl.client}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <a
+                          href={dl.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 underline"
+                        >
+                          Abrir
+                        </a>
+                      </TableCell>
+                      <TableCell>
+                        {dl.acceptedAt ? (
+                          format(new Date(dl.acceptedAt), 'dd/MM/yyyy HH:mm')
                         ) : (
                           <span className="text-gray-400 italic">Não preenchido</span>
                         )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex  items-center h-full">
-                        {/* Acessar formulário */}
-                        <a
-                          href={`/etiquetas/download/${dl.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600"
-                          title="Abrir formulário público"
+                      </TableCell>
+                      <TableCell>
+                        <div
+                          className="max-w-[160px] truncate whitespace-nowrap overflow-hidden"
+                          title={dl.acceptedName || undefined}
                         >
-                          <LinkIcon size={18} />
-                        </a>
+                          {dl.acceptedName ? (
+                            dl.acceptedName
+                          ) : (
+                            <span className="text-gray-400 italic">Não preenchido</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex  items-center h-full">
+                          {/* Acessar formulário */}
+                          <a
+                            href={`/etiquetas/download/${dl.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600"
+                            title="Abrir formulário público"
+                          >
+                            <LinkIcon size={18} />
+                          </a>
 
-                        {/* Copiar link */}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => copyToClipboard(getFormLink(dl.id))}
-                          title="Copiar link"
-                        >
-                          <ClipboardCopy size={18} />
-                        </Button>
+                          {/* Copiar link */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyToClipboard(getFormLink(dl.id))}
+                            title="Copiar link"
+                          >
+                            <ClipboardCopy size={18} />
+                          </Button>
 
-                        {/* Editar  */}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEditClick(dl)}
-                          title="Editar"
-                        >
-                          <Pencil size={18} />
-                        </Button>
+                          {/* Editar  */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditClick(dl)}
+                            title="Editar"
+                          >
+                            <Pencil size={18} />
+                          </Button>
 
-                        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                          <DialogContent className="sm:max-w-md">
-                            <DialogHeader>
-                              <DialogTitle>Editar Download</DialogTitle>
-                              <DialogDescription>Atualize os dados do pedido.</DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                              <Input
-                                placeholder="Pedido"
-                                value={editingItem?.pedido || ''}
-                                onChange={(e) =>
-                                  setEditingItem(
-                                    (prev) => prev && { ...prev, pedido: e.target.value },
-                                  )
-                                }
-                              />
+                          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+                            <DialogContent className="sm:max-w-md">
+                              <DialogHeader>
+                                <DialogTitle>Editar Download</DialogTitle>
+                                <DialogDescription>Atualize os dados do pedido.</DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4 py-4">
+                                <Input
+                                  placeholder="Pedido"
+                                  value={editingItem?.pedido || ''}
+                                  onChange={(e) =>
+                                    setEditingItem(
+                                      (prev) => prev && { ...prev, pedido: e.target.value },
+                                    )
+                                  }
+                                />
 
-                              <Input
-                                placeholder="Nome do Cliente"
-                                value={editingItem?.client || ''}
-                                onChange={(e) =>
-                                  setEditingItem(
-                                    (prev) => prev && { ...prev, client: e.target.value },
-                                  )
-                                }
-                              />
-                              <Input
-                                placeholder="Link do Drive"
-                                value={editingItem?.link || ''}
-                                onChange={(e) =>
-                                  setEditingItem(
-                                    (prev) => prev && { ...prev, link: e.target.value },
-                                  )
-                                }
-                              />
-                            </div>
-                            <DialogFooter>
-                              <Button onClick={handleSaveEdit} disabled={isSaving}>
-                                {isSaving ? (
-                                  <span className="flex items-center gap-2">
-                                    <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                                    Salvando...
-                                  </span>
-                                ) : (
-                                  'Salvar'
-                                )}
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
+                                <Input
+                                  placeholder="Nome do Cliente"
+                                  value={editingItem?.client || ''}
+                                  onChange={(e) =>
+                                    setEditingItem(
+                                      (prev) => prev && { ...prev, client: e.target.value },
+                                    )
+                                  }
+                                />
+                                <Input
+                                  placeholder="Link do Drive"
+                                  value={editingItem?.link || ''}
+                                  onChange={(e) =>
+                                    setEditingItem(
+                                      (prev) => prev && { ...prev, link: e.target.value },
+                                    )
+                                  }
+                                />
+                              </div>
+                              <DialogFooter>
+                                <Button onClick={handleSaveEdit} disabled={isSaving}>
+                                  {isSaving ? (
+                                    <span className="flex items-center gap-2">
+                                      <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                                      Salvando...
+                                    </span>
+                                  ) : (
+                                    'Salvar'
+                                  )}
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
 
-                        {/* Deletar */}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={async () => {
-                            const response = await deleteDownload(dl.id);
-                            if (response?.success) {
-                              setDownloads((prev) => prev.filter((d) => d.id !== dl.id));
-                              toast({
-                                title: 'Removido',
-                                description: `Pedido ${dl.pedido} foi removido.`,
-                                variant: 'destructive',
-                              });
-                            } else {
-                              toast({
-                                title: 'Erro',
-                                description: 'Não foi possível remover o formulario.',
-                                variant: 'destructive',
-                              });
-                            }
-                          }}
-                          title="Excluir"
-                        >
-                          <Trash2 size={18} />
-                        </Button>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-center items-center h-full">
-                        <span
-                          className="inline-block h-3 w-3 rounded-full"
-                          title={
-                            linkStatuses[dl.id] === true
-                              ? 'Link online'
-                              : linkStatuses[dl.id] === false
-                                ? 'Link offline'
-                                : 'Verificando status...'
-                          }
-                          style={{
-                            backgroundColor:
+                          {/* Deletar */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setItemToDelete(dl)}
+                            title="Excluir"
+                          >
+                            <Trash2 size={18} />
+                          </Button>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-center items-center h-full">
+                          <span
+                            className="inline-block h-3 w-3 rounded-full"
+                            title={
                               linkStatuses[dl.id] === true
-                                ? '#22c55e' // verde
+                                ? 'Link online'
                                 : linkStatuses[dl.id] === false
-                                  ? '#ef4444' // vermelho
-                                  : '#a1a1aa', // cinza
-                          }}
-                        />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                                  ? 'Link offline'
+                                  : 'Verificando status...'
+                            }
+                            style={{
+                              backgroundColor:
+                                linkStatuses[dl.id] === true
+                                  ? '#22c55e' // verde
+                                  : linkStatuses[dl.id] === false
+                                    ? '#ef4444' // vermelho
+                                    : '#a1a1aa', // cinza
+                            }}
+                          />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
         </div>
       </div>
+
+      <Dialog open={!!itemToDelete} onOpenChange={(isOpen) => !isOpen && setItemToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar exclusão</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir o pedido <strong>{itemToDelete?.pedido}</strong>? Esta
+              ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setItemToDelete(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (!itemToDelete) return;
+
+                const response = await deleteDownload(itemToDelete.id);
+                if (response?.success) {
+                  setDownloads((prev) => prev.filter((d) => d.id !== itemToDelete.id));
+                  toast({
+                    title: 'Removido',
+                    description: `Pedido ${itemToDelete.pedido} foi removido.`,
+                    variant: 'destructive',
+                  });
+                  setItemToDelete(null);
+                } else {
+                  toast({
+                    title: 'Erro',
+                    description: 'Não foi possível remover o formulário.',
+                    variant: 'destructive',
+                  });
+                }
+              }}
+            >
+              Confirmar exclusão
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
