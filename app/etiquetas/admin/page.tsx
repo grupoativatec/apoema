@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { ClipboardCopy, LinkIcon, Pencil, Trash2 } from 'lucide-react';
+import { ClipboardCopy, FolderIcon, LinkIcon, Pencil, Trash2 } from 'lucide-react';
 import {
   getAllDownloads,
   createDownload,
@@ -34,6 +34,7 @@ import {
 
 import { useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export interface EtiquetasDownload {
   id: string;
@@ -61,6 +62,7 @@ const Page = () => {
 
   const parentRef = useRef<HTMLDivElement>(null);
   const [itemToDelete, setItemToDelete] = useState<EtiquetasDownload | null>(null);
+  const [previewFolderId, setPreviewFolderId] = useState<string | null>(null);
 
   const rowVirtualizer = useVirtualizer({
     count: downloads.length,
@@ -333,100 +335,97 @@ const Page = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex  items-center h-full">
-                          {/* Acessar formulário */}
-                          <a
-                            href={`/etiquetas/download/${dl.id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600"
-                            title="Abrir formulário público"
-                          >
-                            <LinkIcon size={18} />
-                          </a>
+                        <div className="flex flex-wrap items-center gap-1">
+                          {/* AÇÕES DE VISUALIZAÇÃO */}
+                          <div className="flex items-center gap-1">
+                            {/* Abrir formulário público */}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <a
+                                  href={`/etiquetas/download/${dl.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <Button variant="ghost" size="icon">
+                                    <LinkIcon size={18} />
+                                  </Button>
+                                </a>
+                              </TooltipTrigger>
+                              <TooltipContent>Abrir formulário público</TooltipContent>
+                            </Tooltip>
 
-                          {/* Copiar link */}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => copyToClipboard(getFormLink(dl.id))}
-                            title="Copiar link"
-                          >
-                            <ClipboardCopy size={18} />
-                          </Button>
-
-                          {/* Editar  */}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEditClick(dl)}
-                            title="Editar"
-                          >
-                            <Pencil size={18} />
-                          </Button>
-
-                          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                            <DialogContent className="sm:max-w-md">
-                              <DialogHeader>
-                                <DialogTitle>Editar Download</DialogTitle>
-                                <DialogDescription>Atualize os dados do pedido.</DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-4 py-4">
-                                <Input
-                                  placeholder="Pedido"
-                                  value={editingItem?.pedido || ''}
-                                  onChange={(e) =>
-                                    setEditingItem(
-                                      (prev) => prev && { ...prev, pedido: e.target.value },
-                                    )
-                                  }
-                                />
-
-                                <Input
-                                  placeholder="Nome do Cliente"
-                                  value={editingItem?.client || ''}
-                                  onChange={(e) =>
-                                    setEditingItem(
-                                      (prev) => prev && { ...prev, client: e.target.value },
-                                    )
-                                  }
-                                />
-                                <Input
-                                  placeholder="Link do Drive"
-                                  value={editingItem?.link || ''}
-                                  onChange={(e) =>
-                                    setEditingItem(
-                                      (prev) => prev && { ...prev, link: e.target.value },
-                                    )
-                                  }
-                                />
-                              </div>
-                              <DialogFooter>
-                                <Button onClick={handleSaveEdit} disabled={isSaving}>
-                                  {isSaving ? (
-                                    <span className="flex items-center gap-2">
-                                      <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                                      Salvando...
-                                    </span>
-                                  ) : (
-                                    'Salvar'
-                                  )}
+                            {/* Pré-visualizar pasta do Drive */}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    const match = dl.link.match(/\/folders\/([^/?]+)/);
+                                    if (match) setPreviewFolderId(match[1]);
+                                    else {
+                                      toast({
+                                        title: 'Link inválido',
+                                        description: 'Não foi possível extrair o ID da pasta.',
+                                        variant: 'destructive',
+                                      });
+                                    }
+                                  }}
+                                >
+                                  <FolderIcon />
                                 </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
+                              </TooltipTrigger>
+                              <TooltipContent>Pré-visualizar pasta do Drive</TooltipContent>
+                            </Tooltip>
 
-                          {/* Deletar */}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setItemToDelete(dl)}
-                            title="Excluir"
-                          >
-                            <Trash2 size={18} />
-                          </Button>
+                            {/* Copiar link */}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => copyToClipboard(getFormLink(dl.id))}
+                                >
+                                  <ClipboardCopy size={18} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Copiar link do formulário</TooltipContent>
+                            </Tooltip>
+                          </div>
+
+                          {/* AÇÕES ADMINISTRATIVAS */}
+                          <div className="flex items-center gap-1 border-l border-muted px-2 ml-2">
+                            {/* Editar */}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEditClick(dl)}
+                                >
+                                  <Pencil size={18} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Editar formulário</TooltipContent>
+                            </Tooltip>
+
+                            {/* Deletar */}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setItemToDelete(dl)}
+                                >
+                                  <Trash2 size={18} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Excluir formulário</TooltipContent>
+                            </Tooltip>
+                          </div>
                         </div>
                       </TableCell>
+
                       <TableCell>
                         <div className="flex justify-center items-center h-full">
                           <span
@@ -497,6 +496,25 @@ const Page = () => {
               Confirmar exclusão
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!previewFolderId} onOpenChange={() => setPreviewFolderId(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Pré-visualização da pasta</DialogTitle>
+          </DialogHeader>
+          {previewFolderId ? (
+            <iframe
+              src={`https://drive.google.com/embeddedfolderview?id=${previewFolderId}#grid`}
+              width="100%"
+              height="500"
+              frameBorder="0"
+              title="Pré-visualização do Google Drive"
+            />
+          ) : (
+            <p>Carregando...</p>
+          )}
         </DialogContent>
       </Dialog>
     </>
