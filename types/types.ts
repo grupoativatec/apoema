@@ -16,3 +16,24 @@ export type Task = {
   startDate?: string;
   endDate?: string;
 };
+
+export type APIStatus = 'online' | 'offline' | 'unstable';
+
+export interface APIService {
+  name: string;
+  url: string;
+  category: string;
+  status: APIStatus;
+}
+
+export interface API {
+  id: number;
+  name: string;
+  url: string;
+  realUrl: string;
+  categoria: string;
+  descricao: string;
+  authorization?: string;
+  online: boolean;
+  responseTime: number | null;
+}

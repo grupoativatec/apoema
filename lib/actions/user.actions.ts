@@ -142,7 +142,17 @@ export const getCurrentUser = async () => {
 
     if (!userId) return null;
 
-    const [rows]: any = await pool.query('SELECT * FROM usuarios WHERE id = ?', [userId]);
+    // Pegando o usuário e a role dele
+    const [rows]: any = await pool.query(
+      `
+      SELECT u.*, r.nome AS role
+      FROM usuarios u
+      LEFT JOIN usuario_roles ur ON u.id = ur.usuario_id
+      LEFT JOIN roles r ON ur.role_id = r.id
+      WHERE u.id = ?
+    `,
+      [userId],
+    );
 
     if (rows.length === 0) return null;
 
@@ -153,6 +163,7 @@ export const getCurrentUser = async () => {
       nome: user.nome,
       email: user.email,
       avatar: user.avatar,
+      role: user.role || 'membro', // fallback para "membro" se não tiver role definida
     };
   } catch (error) {
     console.error('Erro ao buscar usuário autenticado:', error);

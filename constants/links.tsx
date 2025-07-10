@@ -38,13 +38,14 @@ export const SIDENAV_ITEMS: SideNavItem[] = [
     ],
   },
   {
-    title: 'Configurações',
-    path: '/settings',
-    icon: <Icon icon="lucide:settings" width="24" height="24" />,
+    title: 'Administração',
+    path: '/admin',
+    icon: <Icon icon="lucide:lock" width="24" height="24" />,
+    requiresAdmin: true,
     submenu: true,
     subMenuItems: [
-      // { title: 'Usuarios', path: '/settings/users' },
-      { title: 'Perfil', path: '/settings/profile' },
+      { title: 'Monitoramento', path: '/monitoramento' },
+      { title: 'Usuários', path: '/settings/users' },
     ],
   },
 ];

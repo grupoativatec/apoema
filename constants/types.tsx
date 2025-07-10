@@ -4,4 +4,5 @@ export type SideNavItem = {
   icon?: JSX.Element;
   submenu?: boolean;
   subMenuItems?: SideNavItem[];
+  requiresAdmin?: boolean;
 };

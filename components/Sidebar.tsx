@@ -17,9 +17,10 @@ interface Props {
   avatar: string;
   userId: string;
   accountId: string;
+  role: string;
 }
 
-const Sidebar = ({ name, avatar }: Props) => {
+const Sidebar = ({ name, avatar, role }: Props) => {
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
 
@@ -46,9 +47,11 @@ const Sidebar = ({ name, avatar }: Props) => {
 
         {/* Menu */}
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-6">
-          {SIDENAV_ITEMS.map((item, idx) => (
-            <MenuItem key={idx} item={item} />
-          ))}
+          {SIDENAV_ITEMS.filter((item) => !item.requiresAdmin || role === 'admin').map(
+            (item, idx) => (
+              <MenuItem key={idx} item={item} />
+            ),
+          )}
         </div>
 
         <div className="px-4 py-6"></div>
