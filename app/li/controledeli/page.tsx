@@ -123,7 +123,9 @@ const Page = () => {
 
   const verificarEAtualizarDeferidas = async (licencas: any[]) => {
     const normalizarNumeroLI = (valor: string): string => {
-      return valor.replace(/\D/g, '');
+      if (!valor) return '';
+      // Remove qualquer coisa que não seja dígito
+      return valor.replace(/\D/g, '').trim();
     };
 
     try {
@@ -140,43 +142,57 @@ const Page = () => {
 
       const { dados: deferidas = [] } = await response.json();
 
-      const licencasAtualizadas = licencas.map((li) => {
-        const encontrada = deferidas.find(
-          (d: any) =>
-            d.IMP === li.imp &&
-            normalizarNumeroLI(d.NumeroLI) === normalizarNumeroLI(li.numeroLi) &&
-            d.StatusSiscomex === 'DEFERIDA',
-        );
+      // FILTRAR apenas LIs que estão em análise (evita processar tudo)
+      const lisEmAnalise = licencas.filter((li) => li.situacao?.toLowerCase().trim() === 'analise');
 
-        if (encontrada && li.situacao.toLowerCase() !== 'deferida') {
+      const licencasAtualizadas = lisEmAnalise.map((li) => {
+        const impNormalizado = li.imp?.trim().toUpperCase() || '';
+        const liNumeroNormalizado = normalizarNumeroLI(li.numeroLi);
+
+        const encontrada = deferidas.find((d: any) => {
+          const apiNumeroLi = normalizarNumeroLI(d.NumeroLI);
+          const apiImp = (d.IMP || '').trim().toUpperCase();
+
+          return (
+            apiNumeroLi === liNumeroNormalizado &&
+            apiImp === impNormalizado &&
+            (d.StatusSiscomex || '').toUpperCase() === 'DEFERIDA'
+          );
+        });
+
+        if (encontrada) {
           return { ...li, situacao: 'deferida', precisaAtualizar: true };
         }
+
         return li;
       });
 
       const deferidasAtualizadas = licencasAtualizadas.filter((li) => li.precisaAtualizar);
 
-      const atualizacoes = licencasAtualizadas
-        .filter((li) => li.precisaAtualizar)
-        .map((li) =>
-          updateLicencaImportacao(Number(li.licencaimportacaoid), {
-            ...li,
-            numeroOrquestra: parseInt(li.numeroOrquestra, 10) || 0,
-            dataRegistroLI: formatarDataInternacional(li.dataRegistroLI),
-            dataInclusaoOrquestra: formatarDataInternacional(li.dataInclusaoOrquestra),
-            previsaoDeferimento: formatarDataInternacional(li.previsaoDeferimento),
-            situacao: 'deferida',
-            observacoes: li.observacoes,
-          }),
-        );
+      // Atualizar no banco
+      const atualizacoes = deferidasAtualizadas.map((li) =>
+        updateLicencaImportacao(Number(li.licencaimportacaoid), {
+          ...li,
+          numeroOrquestra: parseInt(li.numeroOrquestra, 10) || 0,
+          dataRegistroLI: formatarDataInternacional(li.dataRegistroLI),
+          dataInclusaoOrquestra: formatarDataInternacional(li.dataInclusaoOrquestra),
+          previsaoDeferimento: formatarDataInternacional(li.previsaoDeferimento),
+          situacao: 'deferida',
+          observacoes: li.observacoes,
+        }),
+      );
 
       await Promise.all(atualizacoes);
 
+      // Atualiza o estado do React sem o campo auxiliar
       setData(
-        licencasAtualizadas.map((li) => {
-          const { precisaAtualizar, ...rest } = li;
-          return rest;
-        }),
+        (prev) =>
+          prev?.map((li) => {
+            const atualizado = deferidasAtualizadas.find(
+              (a) => a.licencaimportacaoid === li.licencaimportacaoid,
+            );
+            return atualizado ? { ...li, situacao: 'deferida' } : li;
+          }) || [],
       );
 
       if (deferidasAtualizadas.length > 0) {
