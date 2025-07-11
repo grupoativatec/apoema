@@ -189,3 +189,40 @@ export const getDownloadStatusByCode = async (code: string): Promise<EtiquetasDo
     return null;
   }
 };
+
+export const getPaginatedDownloads = async ({
+  page,
+  pageSize,
+}: {
+  page: number;
+  pageSize: number;
+}): Promise<{ data: EtiquetasDownload[]; total: number }> => {
+  try {
+    const offset = (page - 1) * pageSize;
+
+    // Total de registros
+    const [countResult]: any = await pool.query(
+      'SELECT COUNT(*) as total FROM apoema.EtiquetasDownloads',
+    );
+    const total = countResult[0].total;
+
+    // Registros paginados
+    const [rows]: any = await pool.query(
+      `SELECT id, pedido, client, link, accepted_at as acceptedAt, accepted_name as acceptedName
+       FROM apoema.EtiquetasDownloads
+       ORDER BY accepted_at DESC
+       LIMIT ? OFFSET ?`,
+      [pageSize, offset],
+    );
+
+    const data = rows.map((row: any) => ({
+      ...row,
+      acceptedAt: row.acceptedAt ? new Date(row.acceptedAt) : null,
+    }));
+
+    return { data, total };
+  } catch (error) {
+    console.error('Erro ao buscar downloads paginados:', error);
+    return { data: [], total: 0 };
+  }
+};

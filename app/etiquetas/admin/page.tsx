@@ -23,17 +23,26 @@ import {
 } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { ClipboardCopy, FolderIcon, LinkIcon, Pencil, Trash2 } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  ClipboardCopy,
+  FolderIcon,
+  LinkIcon,
+  Loader2,
+  Pencil,
+  Trash2,
+} from 'lucide-react';
 import {
   getAllDownloads,
   createDownload,
   updateDownload,
   deleteDownload,
   CreateDownloadResponse,
+  getPaginatedDownloads,
 } from '@/lib/actions/etiquetasDownloads.actions';
 
 import { useRef } from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export interface EtiquetasDownload {
@@ -60,16 +69,13 @@ const Page = () => {
   const [client, setClient] = useState('');
   const [link, setLink] = useState('');
 
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(20); //
+  const [totalCount, setTotalCount] = useState(0);
+
   const parentRef = useRef<HTMLDivElement>(null);
   const [itemToDelete, setItemToDelete] = useState<EtiquetasDownload | null>(null);
   const [previewFolderId, setPreviewFolderId] = useState<string | null>(null);
-
-  const rowVirtualizer = useVirtualizer({
-    count: downloads.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 70,
-    overscan: 10,
-  });
 
   const handleEditClick = (item: EtiquetasDownload) => {
     setEditingItem(item);
@@ -96,9 +102,10 @@ const Page = () => {
 
     if (response?.success) {
       try {
-        const updated = await getAllDownloads(); // pega todos os dados atualizados
-        setDownloads(updated);
-        await checkAllLinks(updated); // revalida status dos links
+        const { data, total } = await getPaginatedDownloads({ page, pageSize });
+        setDownloads(data);
+        setTotalCount(total);
+        await checkAllLinks(data);
       } catch (error) {
         console.error('Erro ao recarregar após update:', error);
       }
@@ -183,10 +190,13 @@ const Page = () => {
   };
 
   const checkAllLinks = async (downloads: EtiquetasDownload[]) => {
-    const statusMap: Record<string, boolean> = {};
+    const statusMap: Record<string, boolean> = { ...linkStatuses };
 
     await Promise.all(
       downloads.map(async (dl) => {
+        // Se já tem status salvo, não revalida
+        if (statusMap[dl.id] !== undefined) return;
+
         const isOnline = await checkIfLinkIsOnline(dl.link);
         statusMap[dl.id] = isOnline;
       }),
@@ -198,10 +208,12 @@ const Page = () => {
   useEffect(() => {
     const fetchDownloads = async () => {
       try {
-        setIsLoading(true); // ← Início do carregamento
-        const data = await getAllDownloads();
+        setIsLoading(true);
+        const { data, total } = await getPaginatedDownloads({ page, pageSize });
         setDownloads(data);
-        await checkAllLinks(data);
+        setTotalCount(total);
+
+        checkAllLinks(data);
       } catch (error) {
         toast({
           title: 'Erro',
@@ -214,7 +226,7 @@ const Page = () => {
     };
 
     fetchDownloads();
-  }, []);
+  }, [page, pageSize]);
 
   const getFormLink = (id: string) => `${window.location.origin}/etiquetas/download/${id}`;
 
@@ -279,181 +291,190 @@ const Page = () => {
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody
-                style={{
-                  height: `${rowVirtualizer.getTotalSize()}px`,
-                  position: 'relative',
-                }}
-              >
-                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                  const dl = downloads[virtualRow.index];
-                  return (
-                    <TableRow key={dl.id}>
-                      <TableCell>
-                        <div
-                          className="max-w-[250px] truncate whitespace-nowrap overflow-hidden"
-                          title={dl.pedido}
-                        >
-                          {dl.pedido}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div
-                          className="max-w-[160px] truncate whitespace-nowrap overflow-hidden"
-                          title={dl.client}
-                        >
-                          {dl.client}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <a
-                          href={dl.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 underline"
-                        >
-                          Abrir
-                        </a>
-                      </TableCell>
-                      <TableCell>
-                        {dl.acceptedAt ? (
-                          format(new Date(dl.acceptedAt), 'dd/MM/yyyy HH:mm')
+              <TableBody>
+                {downloads.map((dl) => (
+                  <TableRow key={dl.id}>
+                    <TableCell>
+                      <div
+                        className="max-w-[250px] truncate whitespace-nowrap overflow-hidden"
+                        title={dl.pedido}
+                      >
+                        {dl.pedido}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div
+                        className="max-w-[160px] truncate whitespace-nowrap overflow-hidden"
+                        title={dl.client}
+                      >
+                        {dl.client}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <a
+                        href={dl.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 underline"
+                      >
+                        Abrir
+                      </a>
+                    </TableCell>
+                    <TableCell>
+                      {dl.acceptedAt ? (
+                        format(new Date(dl.acceptedAt), 'dd/MM/yyyy HH:mm')
+                      ) : (
+                        <span className="text-gray-400 italic">Não preenchido</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div
+                        className="max-w-[160px] truncate whitespace-nowrap overflow-hidden"
+                        title={dl.acceptedName || undefined}
+                      >
+                        {dl.acceptedName ? (
+                          dl.acceptedName
                         ) : (
                           <span className="text-gray-400 italic">Não preenchido</span>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        <div
-                          className="max-w-[160px] truncate whitespace-nowrap overflow-hidden"
-                          title={dl.acceptedName || undefined}
-                        >
-                          {dl.acceptedName ? (
-                            dl.acceptedName
-                          ) : (
-                            <span className="text-gray-400 italic">Não preenchido</span>
-                          )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap items-center gap-1">
+                        {/* AÇÕES DE VISUALIZAÇÃO */}
+                        <div className="flex items-center gap-1">
+                          {/* Abrir formulário público */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <a
+                                href={`/etiquetas/download/${dl.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <Button variant="ghost" size="icon">
+                                  <LinkIcon size={18} />
+                                </Button>
+                              </a>
+                            </TooltipTrigger>
+                            <TooltipContent>Abrir formulário público</TooltipContent>
+                          </Tooltip>
+
+                          {/* Pré-visualizar pasta do Drive */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  const match = dl.link.match(/\/folders\/([^/?]+)/);
+                                  if (match) setPreviewFolderId(match[1]);
+                                  else {
+                                    toast({
+                                      title: 'Link inválido',
+                                      description: 'Não foi possível extrair o ID da pasta.',
+                                      variant: 'destructive',
+                                    });
+                                  }
+                                }}
+                              >
+                                <FolderIcon />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Pré-visualizar pasta do Drive</TooltipContent>
+                          </Tooltip>
+
+                          {/* Copiar link */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => copyToClipboard(getFormLink(dl.id))}
+                              >
+                                <ClipboardCopy size={18} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Copiar link do formulário</TooltipContent>
+                          </Tooltip>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap items-center gap-1">
-                          {/* AÇÕES DE VISUALIZAÇÃO */}
-                          <div className="flex items-center gap-1">
-                            {/* Abrir formulário público */}
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <a
-                                  href={`/etiquetas/download/${dl.id}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <Button variant="ghost" size="icon">
-                                    <LinkIcon size={18} />
-                                  </Button>
-                                </a>
-                              </TooltipTrigger>
-                              <TooltipContent>Abrir formulário público</TooltipContent>
-                            </Tooltip>
 
-                            {/* Pré-visualizar pasta do Drive */}
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    const match = dl.link.match(/\/folders\/([^/?]+)/);
-                                    if (match) setPreviewFolderId(match[1]);
-                                    else {
-                                      toast({
-                                        title: 'Link inválido',
-                                        description: 'Não foi possível extrair o ID da pasta.',
-                                        variant: 'destructive',
-                                      });
-                                    }
-                                  }}
-                                >
-                                  <FolderIcon />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Pré-visualizar pasta do Drive</TooltipContent>
-                            </Tooltip>
+                        {/* AÇÕES ADMINISTRATIVAS */}
+                        <div className="flex items-center gap-1 border-l border-muted px-2 ml-2">
+                          {/* Editar */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEditClick(dl)}
+                              >
+                                <Pencil size={18} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Editar formulário</TooltipContent>
+                          </Tooltip>
 
-                            {/* Copiar link */}
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => copyToClipboard(getFormLink(dl.id))}
-                                >
-                                  <ClipboardCopy size={18} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Copiar link do formulário</TooltipContent>
-                            </Tooltip>
-                          </div>
-
-                          {/* AÇÕES ADMINISTRATIVAS */}
-                          <div className="flex items-center gap-1 border-l border-muted px-2 ml-2">
-                            {/* Editar */}
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleEditClick(dl)}
-                                >
-                                  <Pencil size={18} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Editar formulário</TooltipContent>
-                            </Tooltip>
-
-                            {/* Deletar */}
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => setItemToDelete(dl)}
-                                >
-                                  <Trash2 size={18} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Excluir formulário</TooltipContent>
-                            </Tooltip>
-                          </div>
+                          {/* Deletar */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setItemToDelete(dl)}
+                              >
+                                <Trash2 size={18} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Excluir formulário</TooltipContent>
+                          </Tooltip>
                         </div>
-                      </TableCell>
+                      </div>
+                    </TableCell>
 
-                      <TableCell>
-                        <div className="flex justify-center items-center h-full">
+                    <TableCell>
+                      <div className="flex justify-center items-center h-full">
+                        {linkStatuses[dl.id] === undefined ? (
+                          <Loader2 className="h-4 w-4 text-zinc-400 animate-spin" />
+                        ) : (
                           <span
                             className="inline-block h-3 w-3 rounded-full"
-                            title={
-                              linkStatuses[dl.id] === true
-                                ? 'Link online'
-                                : linkStatuses[dl.id] === false
-                                  ? 'Link offline'
-                                  : 'Verificando status...'
-                            }
+                            title={linkStatuses[dl.id] ? 'Link online' : 'Link offline'}
                             style={{
-                              backgroundColor:
-                                linkStatuses[dl.id] === true
-                                  ? '#22c55e' // verde
-                                  : linkStatuses[dl.id] === false
-                                    ? '#ef4444' // vermelho
-                                    : '#a1a1aa', // cinza
+                              backgroundColor: linkStatuses[dl.id] ? '#22c55e' : '#ef4444',
                             }}
                           />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           )}
+
+          <div className="flex items-center justify-between mt-4 px-2 py-1">
+            <div className="text-sm text-muted-foreground">
+              Página {page} de {Math.ceil(totalCount / pageSize)}
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                disabled={page === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setPage((prev) => prev + 1)}
+                disabled={page >= Math.ceil(totalCount / pageSize)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -477,7 +498,10 @@ const Page = () => {
 
                 const response = await deleteDownload(itemToDelete.id);
                 if (response?.success) {
-                  setDownloads((prev) => prev.filter((d) => d.id !== itemToDelete.id));
+                  const { data, total } = await getPaginatedDownloads({ page, pageSize });
+                  setDownloads(data);
+                  setTotalCount(total);
+                  await checkAllLinks(data);
                   toast({
                     title: 'Removido',
                     description: `Pedido ${itemToDelete.pedido} foi removido.`,
@@ -515,6 +539,50 @@ const Page = () => {
           ) : (
             <p>Carregando...</p>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Formulário</DialogTitle>
+            <DialogDescription>Atualize as informações do formulário abaixo.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <Input
+              placeholder="Pedido"
+              value={editingItem?.pedido || ''}
+              onChange={(e) =>
+                setEditingItem((prev) => (prev ? { ...prev, pedido: e.target.value } : prev))
+              }
+            />
+
+            <Input
+              placeholder="Nome do Cliente"
+              value={editingItem?.client || ''}
+              onChange={(e) =>
+                setEditingItem((prev) => (prev ? { ...prev, client: e.target.value } : prev))
+              }
+            />
+
+            <Input
+              placeholder="Link para Download"
+              value={editingItem?.link || ''}
+              onChange={(e) =>
+                setEditingItem((prev) => (prev ? { ...prev, link: e.target.value } : prev))
+              }
+            />
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={isSaving}>
+              {isSaving ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
