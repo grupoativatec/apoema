@@ -41,11 +41,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { createLicencaImportacao } from '@/lib/actions/li.actions';
+import { AlertDialogFooter } from '@/components/ui/alert-dialog';
 
 const Page = () => {
   const [orquestra, setOrquestra] = useState<any[]>([]);
   const [filteredOrquestra, setFilteredOrquestra] = useState<any[]>([]);
   const { toast } = useToast(); // Usando o hook do toast
+  const [showNumerarioModal, setShowNumerarioModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any | null>(null);
 
   const [isAdminUser, setIsAdminUser] = useState(false);
 
@@ -99,52 +103,28 @@ const Page = () => {
 
   const handleStatusChange = async (imp: string, novoStatus: string) => {
     try {
-      let dataFinalizacao: string | undefined = undefined;
+      const itemSelecionado = orquestra.find((o) => o.imp === imp);
 
+      if (activeTab === 'orquestra' && novoStatus === 'Fazer Númerario') {
+        setSelectedItem(itemSelecionado);
+        setShowNumerarioModal(true);
+        return;
+      }
+
+      let dataFinalizacao: string | undefined = undefined;
       if (novoStatus === 'Finalizado') {
         dataFinalizacao = new Date().toISOString().slice(0, 10);
       }
 
-      // Atualiza o status no banco de dados
       await updateOrquestraStatus(imp, novoStatus, dataFinalizacao);
 
-      // Atualiza localmente
-      setOrquestra((prevOrquestras) =>
-        prevOrquestras.map((orquestra) =>
-          orquestra.imp === imp ? { ...orquestra, status: novoStatus, dataFinalizacao } : orquestra,
-        ),
+      setOrquestra((prev) =>
+        prev.map((o) => (o.imp === imp ? { ...o, status: novoStatus, dataFinalizacao } : o)),
       );
 
-      setFilteredOrquestra((prevFiltered) =>
-        prevFiltered.map((orquestra) =>
-          orquestra.imp === imp ? { ...orquestra, status: novoStatus, dataFinalizacao } : orquestra,
-        ),
+      setFilteredOrquestra((prev) =>
+        prev.map((o) => (o.imp === imp ? { ...o, status: novoStatus, dataFinalizacao } : o)),
       );
-
-      // Se novo status for "Fazer Orquestra", verifica se há IMP com anuencia PO que não seja FinalizadoPO
-      if (novoStatus === 'Fazer Orquestra') {
-        const impAtual = orquestra.find((o) => o.imp === imp);
-
-        if (
-          impAtual &&
-          impAtual.anuencia?.toLowerCase().includes('po') &&
-          impAtual.statusAnuencia !== 'FinalizadoPO'
-        ) {
-          await updateOrquestraStatusAnuencia(impAtual.imp, 'LiFeita-PoPendente');
-
-          setOrquestra((prev) =>
-            prev.map((o) =>
-              o.imp === impAtual.imp ? { ...o, statusAnuencia: 'LiFeita-PoPendente' } : o,
-            ),
-          );
-
-          setFilteredOrquestra((prev) =>
-            prev.map((o) =>
-              o.imp === impAtual.imp ? { ...o, statusAnuencia: 'LiFeita-PoPendente' } : o,
-            ),
-          );
-        }
-      }
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
     }
@@ -423,6 +403,22 @@ const Page = () => {
         </div>
       </div>
 
+      {selectedItem && (
+        <FazerNumerarioDialog
+          open={showNumerarioModal}
+          onClose={() => {
+            setShowNumerarioModal(false);
+            setSelectedItem(null);
+          }}
+          item={selectedItem}
+          onCreated={async () => {
+            const orquestras = await getOrquestras();
+            setOrquestra(orquestras);
+            setFilteredOrquestra(orquestras);
+          }}
+        />
+      )}
+
       {/* Abas estilo ClickUp */}
       <div className="flex items-center gap-2 border-b border-border pb-2 uppercase ">
         <button
@@ -671,7 +667,7 @@ const Page = () => {
                   </TableCell>
 
                   {isAdminUser && (
-                    <TableCell className="text-center flex items-center gap-2">
+                    <TableCell>
                       <EditIMPDialog
                         item={item}
                         onSave={(updatedItem) => {
@@ -687,7 +683,6 @@ const Page = () => {
                           });
                         }}
                       />
-
                       <DeleteIMPDialog
                         imp={item.imp}
                         onConfirm={async () => {
@@ -822,7 +817,7 @@ const EditIMPDialog = ({ item, onSave }: { item: any; onSave: (updated: any) => 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="icon" className="w-[40px] dark:bg-zinc-800 dark:text-white">
+        <Button size="icon" className="w-[40px] dark:bg-zinc-800 dark:text-white mr-2">
           <Pencil size={18} />
         </Button>
       </DialogTrigger>
@@ -920,6 +915,242 @@ const EditIMPDialog = ({ item, onSave }: { item: any; onSave: (updated: any) => 
           </Button>
           <Button onClick={handleSave} className="bg-sky-500 hover:bg-sky-400 text-white">
             Salvar alterações
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const FazerNumerarioDialog = ({
+  open,
+  onClose,
+  item,
+  onCreated,
+}: {
+  open: boolean;
+  onClose: () => void;
+  item: any;
+  onCreated: () => void;
+}) => {
+  const [liList, setLiList] = useState([
+    {
+      numeroLi: '',
+      ncm: '',
+      numeroOrquestra: '',
+      dataInclusaoOrquestra: '',
+      dataRegistroLI: '',
+    },
+  ]);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  const calcularPrevisaoDeferimento = (data: string) => {
+    const d = new Date(data);
+    d.setDate(d.getDate() + 11);
+    return d.toISOString().split('T')[0];
+  };
+
+  const handleChange = (index: number, field: string, value: string) => {
+    setLiList((prev) => prev.map((li, i) => (i === index ? { ...li, [field]: value } : li)));
+  };
+
+  const handleAddLI = () => {
+    setLiList((prev) => [
+      ...prev,
+      {
+        numeroLi: '',
+        ncm: '',
+        numeroOrquestra: '',
+        dataInclusaoOrquestra: '',
+        dataRegistroLI: '',
+      },
+    ]);
+  };
+
+  const handleRemoveLI = (index: number) => {
+    setLiList((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async () => {
+    try {
+      setIsLoading(true);
+
+      for (let i = 0; i < liList.length; i++) {
+        const li = liList[i];
+
+        const numeroLiValido = /^\d{2}\/\d{7}-\d$/.test(li.numeroLi);
+        const numeroOrquestraValido = /^\d{7}$/.test(li.numeroOrquestra);
+        const ncmValido = /^\d{4}\.\d{2}\.\d{2}$/.test(li.ncm);
+
+        if (!numeroLiValido) {
+          toast({
+            description: `LI ${i + 1}: Número da LI inválido. Use o formato 25/2651918-9.`,
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        if (!numeroOrquestraValido) {
+          toast({
+            description: `LI ${i + 1}: Número da Orquestra inválido. Deve conter 7 dígitos.`,
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        if (!ncmValido) {
+          toast({
+            description: `LI ${i + 1}: NCM inválido. Use o formato 9503.00.99.`,
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      const promises = liList.map((li) => {
+        const payload = {
+          imp: item.imp,
+          importador: item.importador,
+          referenciaDoCliente: item.referencia,
+          numeroOrquestra: Number(li.numeroOrquestra),
+          numeroLi: li.numeroLi,
+          ncm: li.ncm,
+          dataInclusaoOrquestra: li.dataInclusaoOrquestra,
+          dataRegistroLI: li.dataRegistroLI,
+          previsaoDeferimento: calcularPrevisaoDeferimento(li.dataInclusaoOrquestra),
+          situacao: 'analise',
+          observacoes: item.obs || '',
+        };
+
+        return createLicencaImportacao(payload);
+      });
+
+      await Promise.all(promises);
+
+      await updateOrquestraStatus(item.imp, 'Fazer Númerario');
+
+      toast({
+        description: `Criadas ${liList.length} LIs para ${item.imp}`,
+      });
+
+      onCreated();
+      onClose();
+    } catch (error) {
+      console.error(error);
+      toast({
+        description: 'Erro ao criar uma ou mais LIs',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="h-[90vh] max-w-3xl flex flex-col justify-between overflow-hidden">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-semibold mb-1">
+            Adicionar LIs para {item?.imp}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="overflow-y-auto pr-2 space-y-6 flex-1">
+          {liList.map((li, index) => (
+            <div
+              key={index}
+              className="space-y-4 border-muted border p-5 pb-4 border-zinc-700 rounded-sm"
+            >
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-muted-foreground">LI {index + 1}</span>
+                {liList.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red hover:bg-transparent"
+                    onClick={() => handleRemoveLI(index)}
+                  >
+                    Remover
+                  </Button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Número da LI</label>
+                  <Input
+                    value={li.numeroLi}
+                    placeholder="Ex: 25/2651918-9"
+                    onChange={(e) => handleChange(index, 'numeroLi', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">NCM</label>
+                  <Input
+                    value={li.ncm}
+                    placeholder="Ex: 9503.00.99"
+                    onChange={(e) => handleChange(index, 'ncm', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Número da Orquestra</label>
+                  <Input
+                    value={li.numeroOrquestra}
+                    placeholder="Ex: 3405521"
+                    onChange={(e) => handleChange(index, 'numeroOrquestra', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Data Registro LI</label>
+                  <Input
+                    type="date"
+                    value={li.dataRegistroLI}
+                    onChange={(e) => handleChange(index, 'dataRegistroLI', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Data Inclusão Orquestra</label>
+                  <Input
+                    type="date"
+                    value={li.dataInclusaoOrquestra}
+                    onChange={(e) => handleChange(index, 'dataInclusaoOrquestra', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Previsão Deferimento</label>
+                  <Input
+                    disabled
+                    value={
+                      li.dataInclusaoOrquestra
+                        ? new Date(
+                            calcularPrevisaoDeferimento(li.dataInclusaoOrquestra),
+                          ).toLocaleDateString('pt-BR')
+                        : ''
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+          <Button variant="outline" onClick={handleAddLI} className="w-full">
+            + Adicionar outra LI
+          </Button>
+        </div>
+        <DialogFooter className="mt-6">
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSubmit} disabled={isLoading}>
+            {isLoading ? 'Salvando...' : 'Salvar todas'}
           </Button>
         </DialogFooter>
       </DialogContent>
