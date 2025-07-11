@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -380,7 +380,7 @@ const Page = () => {
     }
   };
 
-  const currentData = getFilteredByTab();
+  const currentData = useMemo(() => getFilteredByTab(), [activeTab, filteredOrquestra]);
   const showEmpty = !isLoading && currentData.length === 0;
 
   const formatBRDate = (dateStr?: string) => {
@@ -389,8 +389,24 @@ const Page = () => {
     return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('pt-BR');
   };
 
+  const contagemPorAba = {
+    lis: filteredOrquestra.filter((o) => isLIS(o.status)).length,
+    liconferencia: filteredOrquestra.filter((o) => isLiconferencia(o.status)).length,
+    anuenciaPO: filteredOrquestra.filter(
+      (o) => isAnuenciaPO(o.anuencia) && o.statusAnuencia !== 'FinalizadoPO',
+    ).length,
+    orquestra: filteredOrquestra.filter((o) => isOrquestra(o.status)).length,
+    numerario: filteredOrquestra.filter((o) => isNumerario(o.status)).length,
+    anuenciaPOFinalizada: filteredOrquestra.filter((o) => {
+      const temPO = typeof o.anuencia === 'string' && o.anuencia.toLowerCase().includes('po');
+      const estaFinalizadoPO = o.statusAnuencia === 'FinalizadoPO';
+      return temPO && estaFinalizadoPO;
+    }).length,
+    finalizados: filteredOrquestra.filter((o) => isFinalizados(o.status)).length,
+  };
+
   return (
-    <div className="space-y-10 rounded-2xl bg-white p-8 shadow-md dark:border dark:border-white/20 dark:bg-zinc-900/80">
+    <div className="space-y-3 rounded-2xl  bg-white p-8 shadow-md dark:border dark:border-white/20 dark:bg-zinc-900/80">
       <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:gap-0">
         <div>
           <h1 className="mb-2 text-3xl font-bold tracking-tight">Processos</h1>
@@ -417,7 +433,7 @@ const Page = () => {
               : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
           }`}
         >
-          LI´S a fazer
+          LI´S a fazer ({contagemPorAba.lis})
         </button>
         <button
           onClick={() => setActiveTab('anuenciaPO')}
@@ -427,7 +443,7 @@ const Page = () => {
               : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
           }`}
         >
-          PO a fazer
+          PO A FAZER ({contagemPorAba.anuenciaPO}){' '}
         </button>
         <button
           onClick={() => setActiveTab('liconferencia')}
@@ -437,7 +453,7 @@ const Page = () => {
               : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
           }`}
         >
-          Conferência LI
+          CONFERÊNCIA LI ({contagemPorAba.liconferencia})
         </button>
         <button
           onClick={() => setActiveTab('orquestra')}
@@ -447,7 +463,7 @@ const Page = () => {
               : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
           }`}
         >
-          Orquestra
+          ORQUESTRA ({contagemPorAba.orquestra})
         </button>
         <button
           onClick={() => setActiveTab('numerario')}
@@ -457,7 +473,7 @@ const Page = () => {
               : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
           }`}
         >
-          Númerario
+          NÚMERARIO ({contagemPorAba.numerario})
         </button>
         <button
           onClick={() => setActiveTab('anuenciaPOFinalizada')}
@@ -467,7 +483,7 @@ const Page = () => {
               : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
           }`}
         >
-          Finalizados PO
+          FINALIZADOS PO ({contagemPorAba.anuenciaPOFinalizada})
         </button>
         <button
           onClick={() => setActiveTab('finalizados')}
@@ -477,11 +493,11 @@ const Page = () => {
               : 'text-muted-foreground hover:bg-muted dark:text-[#aaaaaa] dark:hover:bg-[#2a2a2a]'
           }`}
         >
-          Finalizados
+          FINALIZADOS ({contagemPorAba.finalizados})
         </button>
       </div>
 
-      <div className="max-h-[550px] overflow-auto rounded-2xl border">
+      <div className="overflow-auto rounded-2xl  border">
         {isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-12 w-full" />
@@ -513,7 +529,11 @@ const Page = () => {
               {currentData.map((item) => (
                 <TableRow key={item.imp}>
                   <TableCell>{item.imp || '-'}</TableCell>
-                  <TableCell>{item.referencia || '-'}</TableCell>
+                  <TableCell>
+                    <div className="max-w-[160px] truncate" title={item.referencia || '-'}>
+                      {item.referencia || '-'}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <span className="block max-w-[150px] truncate" title={item.exportador}>
                       {item.exportador?.split(' ').slice(0, 8).join(' ') || '-'}
@@ -754,7 +774,7 @@ const DeleteIMPDialog = ({ imp, onConfirm }: { imp: string; onConfirm: () => voi
             variant="destructive"
             onClick={() => {
               onConfirm();
-              setOpen(false); // fecha após confirmar
+              setOpen(false);
             }}
           >
             Confirmar exclusão
@@ -768,12 +788,6 @@ const DeleteIMPDialog = ({ imp, onConfirm }: { imp: string; onConfirm: () => voi
 const EditIMPDialog = ({ item, onSave }: { item: any; onSave: (updated: any) => void }) => {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({ ...item });
-
-  const formatBRDate = (dateStr?: string) => {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr + 'T00:00:00');
-    return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('pt-BR');
-  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -820,12 +834,7 @@ const EditIMPDialog = ({ item, onSave }: { item: any; onSave: (updated: any) => 
         <div className="grid gap-3">
           <div className="flex flex-col">
             <label className="text-sm font-medium text-muted-foreground">IMP</label>
-            <Input
-              name="imp"
-              value={formData.imp || ''}
-              onChange={handleChange}
-              placeholder="IMP"
-            />
+            <Input name="imp" value={formData.imp || ''} disabled readOnly />
           </div>
 
           <div className="flex flex-col">
@@ -863,10 +872,10 @@ const EditIMPDialog = ({ item, onSave }: { item: any; onSave: (updated: any) => 
           <div className="flex flex-col">
             <label className="text-sm font-medium text-muted-foreground">Data de Recebimento</label>
             <Input
+              type="date"
               name="recebimento"
-              value={formatBRDate(formData.recebimento)}
+              value={formData.recebimento?.slice(0, 10) || ''}
               onChange={handleChange}
-              placeholder="dd/mm/aaaa"
             />
           </div>
 
@@ -875,21 +884,33 @@ const EditIMPDialog = ({ item, onSave }: { item: any; onSave: (updated: any) => 
               Data Prev. de Chegada
             </label>
             <Input
+              type="date"
               name="chegada"
-              value={formatBRDate(formData.chegada)}
+              value={formData.chegada?.slice(0, 10) || ''}
               onChange={handleChange}
-              placeholder="dd/mm/aaaa"
             />
           </div>
 
           <div className="flex flex-col">
             <label className="text-sm font-medium text-muted-foreground">Destino</label>
-            <Input
-              name="destino"
+            <Select
               value={formData.destino || ''}
-              onChange={handleChange}
-              placeholder="Destino"
-            />
+              onValueChange={(value) =>
+                setFormData((prev: any) => ({
+                  ...prev,
+                  destino: value.toUpperCase(),
+                }))
+              }
+            >
+              <SelectTrigger className="w-full uppercase">
+                <SelectValue placeholder="Selecione o destino" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="RIO DE JANEIRO">Rio de Janeiro</SelectItem>
+                <SelectItem value="ITAPOA - SC">Itapoa - SC</SelectItem>
+                <SelectItem value="NAVEGANTES">Navegantes</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
