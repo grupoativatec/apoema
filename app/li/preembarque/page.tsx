@@ -25,10 +25,9 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { Download, Filter, Search, ZoomIn } from 'lucide-react';
+import { Filter, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const PLANILHA_CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vQh3TlwfOnJOB5pMIvEA5UNiYLHD5jODIgGCqpvMDqFR05HAGbysqJBXCdfENahY151zEs5ri6ebJPY/pub?gid=0&single=true&output=csv';
@@ -133,11 +132,9 @@ export default function PlanilhaPage() {
                 'IMPORTADOR',
                 'ADQUIRENTE',
                 'REFERENCIA',
-                'ETD',
                 'ETA',
                 'DESTINO',
                 'NAVIO',
-                'CONTAINER',
                 'SITUAÇÃO',
                 'BL',
               ].includes(key);
@@ -202,12 +199,12 @@ export default function PlanilhaPage() {
   };
 
   return (
-    <div className=" bg-zinc-100 dark:bg-zinc-900/80 p-6 md:p-8">
+    <div className="space-y-3 rounded-2xl  bg-white p-8 shadow-md dark:border dark:border-white/20 dark:bg-zinc-900/80">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="bg-white dark:bg-zinc-900/80 dark:border dark:border-zinc-700 backdrop-blur-md rounded-2xl shadow-lg p-6 md:p-8 space-y-6 w-full transition-colors"
+        className="bg-white dark:bg-zinc-900/80 space-y-6 w-full transition-colors"
       >
         {/* Cabeçalho */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -306,7 +303,7 @@ export default function PlanilhaPage() {
           className="relative overflow-y-auto rounded-lg border border-zinc-200 dark:border-zinc-700 w-full scrollbar-thin scrollbar-thumb-zinc-600 scrollbar-track-zinc-800"
         >
           <Table className="table-fixed w-full">
-            <TableHeader className="sticky top-0 z-10 bg-white dark:bg-zinc-900/90 backdrop-blur-sm shadow-sm">
+            <TableHeader className="sticky top-0 z-10 bg-white dark:bg-zinc-900/90 backdrop-blur-sm shadow-sm ">
               <TableRow>
                 {isLoading
                   ? Array.from({ length: 5 }).map((_, idx) => (
@@ -317,10 +314,7 @@ export default function PlanilhaPage() {
                   : Object.keys(colunasVisiveis)
                       .filter((key) => colunasVisiveis[key])
                       .map((key) => (
-                        <TableHead
-                          key={key}
-                          className="px-3 py-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100"
-                        >
+                        <TableHead key={key} className="px-3 py-2 text-sm font-semibold ">
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div
@@ -380,10 +374,7 @@ export default function PlanilhaPage() {
                         {Object.keys(colunasVisiveis)
                           .filter((key) => colunasVisiveis[key])
                           .map((key, colIdx) => (
-                            <TableCell
-                              key={colIdx}
-                              className="px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300"
-                            >
+                            <TableCell key={colIdx} className="px-3 py-2 text-sm">
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <div
