@@ -773,7 +773,7 @@ const Page = () => {
         </div>
       </div>
 
-      <div ref={parentRef} className="max-h-[550px] overflow-auto rounded-2xl border">
+      <div ref={parentRef} className="overflow-auto rounded-2xl border">
         <Table>
           <TableHeader className="sticky top-0 z-10 bg-white shadow-md dark:bg-zinc-900">
             <TableRow>

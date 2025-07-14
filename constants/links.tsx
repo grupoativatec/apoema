@@ -13,6 +13,7 @@ export const SIDENAV_ITEMS: SideNavItem[] = [
       { title: 'Processos', path: '/li/processos' },
       { title: 'Controle de Li', path: '/li/controledeli' },
       { title: 'Buscar Ref.', path: '/li/buscar-referencia' },
+      { title: 'Pre-Embarque', path: '/li/preembarque' },
     ],
   },
   {
