@@ -4,24 +4,21 @@ export const translations = {
     anatTitle: '1. Certificação ANATEL',
     anatText:
       'Produtos com funções de radiofrequência, Bluetooth ou Wi-Fi devem conter o selo da ANATEL. Caso não tenha recebido o selo, entre em contato conosco imediatamente para providenciarmos sua emissão e envio. A aplicação é exigida por regulamentação e não deve ser removida, substituída ou alterada.',
+
     inmetroTitle: '2. Certificação INMETRO',
-    labelingReqs: 'a. Requisitos de Rotulagem',
-    labelingItems: [
-      '“ATENÇÃO” / “ADVERTÊNCIA”: mínimo de 5 mm de altura',
-      'Texto explicativo de advertência: mínimo de 2 mm de altura',
-      'Selo horizontal OCP: mínimo de 50 mm de largura',
-      'Selo quadrado OCP: mínimo de 20 mm',
-      'Selo etário "0–3 anos": mínimo de 10 mm',
+    inmetroText: [
+      'a. Requisitos de Rotulagem:\n• "ATENÇÃO" / "ADVERTÊNCIA": mínimo de 5 mm de altura\n• Texto de atenção e/ou advertência: mínimo de 2 mm de altura\n• Selo horizontal segurança: mínimo de 50 mm de largura\n• Selo quadrado segurança: mínimo de 20 mm\n• Selo etário "0–3 anos": mínimo de 10 mm',
+      'b. Produtos com projéteis ou função lançadora:\n"NÃO APONTAR PARA OS OLHOS E PARA A FACE. NÃO UTILIZAR PROJÉTEIS DIFERENTES DOS PROVIDOS E INDICADOS PELO FABRICANTE DO PRODUTO."',
+      'c. Produtos com cordão longo:\n"O USO DO BRINQUEDO DEVE SER SUPERVISIONADO, POIS O BRINQUEDO APRESENTA CORDÃO LONGO DE USO FUNCIONAL NO QUAL A CRIANÇA PODE PRENDER-SE OU ESTRANGULAR-SE."',
+      'd. É proibida a comercialização dos brinquedos tipo wateryoyo, tape ball, yoyoball, pufferball, squishyball e similares, que contenham cordão, independentemente da nomenclatura.',
+      'e. Embalagens com grampos ou fechos metálicos devem conter o aviso:\n"ATENÇÃO! ESTA EMBALAGEM CONTÉM FECHOS / GRAMPOS. RETIRAR ANTES DE ENTREGAR O BRINQUEDO À CRIANÇA."',
+      'f. Produtos com pilhas ou baterias:\nÉ obrigatória a inclusão de advertências de segurança quanto ao uso de pilhas ou baterias.\nTambém devem constar: modelo, tipo e quantidade utilizadas.',
     ],
-    projectileProducts: 'b. Produtos com projéteis ou função lançadora',
-    projectileWarning:
-      '“NÃO APONTAR PARA OS OLHOS E PARA A FACE. NÃO UTILIZAR PROJÉTEIS DIFERENTES DOS PROVIDOS E INDICADOS PELO FABRICANTE DO PRODUTO.”',
-    batteryProducts: 'c. Produtos com pilhas ou baterias',
-    batteryText:
-      'É obrigatória a inclusão de advertências de segurança quanto ao uso de pilhas ou baterias. Também devem constar: modelo, tipo e quantidade utilizadas.',
+
     responsibilityTitle: '3. Responsabilidade sobre Informações Complementares',
     responsibilityText:
       'Informações fora do escopo da certificação (como nome do importador, imagens ou textos promocionais) são de responsabilidade exclusiva do importador ou adquirente. Não é permitido modificar ou personalizar as etiquetas fornecidas, pois isso compromete a conformidade com os órgãos reguladores e pode gerar penalidades em fiscalizações.',
+
     finalTitle: '4. Recomendações Finais',
     finalText:
       'As etiquetas devem ser fixadas de forma indelével e não podem se desprender até a chegada ao consumidor final. É vedada a aplicação solta, destacável ou separada do produto. É proibido reproduzir, redimensionar ou redesenhar as etiquetas sem orientação técnica expressa da nossa equipe. Em caso de dúvidas, entre em contato conosco para orientações específicas.',
@@ -54,28 +51,25 @@ export const translations = {
     termsTitle: 'Terms of Use',
     anatTitle: '1. ANATEL Certification',
     anatText:
-      'Products with radiofrequency, Bluetooth or Wi-Fi functionality must have the ANATEL seal. If you have not received the seal, please contact us immediately so we can arrange for its issuance and delivery. This seal is required by regulation and must not be removed, replaced, or altered.',
+      'Products with radiofrequency, Bluetooth, or Wi-Fi functions must bear the ANATEL seal. If you have not received the seal, please contact us immediately so we can issue and send it. Application is required by regulation and must not be removed, replaced, or altered.',
+
     inmetroTitle: '2. INMETRO Certification',
-    labelingReqs: 'a. Labeling Requirements',
-    labelingItems: [
-      '"ATTENTION" / "WARNING": minimum height of 5 mm',
-      'Explanatory warning text: minimum height of 2 mm',
-      'Horizontal OCP seal: minimum width of 50 mm',
-      'Square OCP seal: minimum size of 20 mm',
-      '"0–3 years" age seal: minimum size of 10 mm',
+    inmetroText: [
+      "a. Labeling Requirements:\n- 'ATTENTION' / 'WARNING': minimum height of 5 mm\n- Warning or caution text: minimum height of 2 mm\n- Horizontal safety seal: minimum width of 50 mm\n- Square safety seal: minimum 20 mm\n- Age seal '0–3 years': minimum 10 mm",
+      "b. Products with projectiles or launching features (must include the following label):\n'DO NOT AIM AT EYES OR FACE. DO NOT USE PROJECTILES OTHER THAN THOSE PROVIDED AND INDICATED BY THE PRODUCT MANUFACTURER.'",
+      "c. Products with long cords (must include the following label):\n'TOY USE SHOULD BE SUPERVISED, AS THE TOY CONTAINS A FUNCTIONAL LONG CORD THAT MAY POSE A STRANGULATION OR ENTANGLEMENT HAZARD TO THE CHILD.'",
+      'd. The following are prohibited: wateryoyo, tape ball, yoyoball, pufferball, squishyball, and other similar toys containing cords, regardless of alternative names.',
+      "e. If the packaging can be opened by children and contains staples or metal fasteners with sharp edges or points, it must display the following warning:\n'WARNING! THIS PACKAGE CONTAINS CLIPS / STAPLES. REMOVE BEFORE GIVING THE TOY TO A CHILD.'",
+      'f. Products with batteries:\nIt is mandatory to include safety warnings regarding battery use. The label must also specify the model, type, and quantity used.',
     ],
-    projectileProducts: 'b. Products with projectiles or launching function',
-    projectileWarning:
-      '"DO NOT AIM AT EYES OR FACE. DO NOT USE PROJECTILES DIFFERENT FROM THOSE PROVIDED AND INDICATED BY THE PRODUCT MANUFACTURER."',
-    batteryProducts: 'c. Products with batteries',
-    batteryText:
-      'It is mandatory to include safety warnings regarding battery use. The label must also specify the model, type, and quantity of batteries used.',
+
     responsibilityTitle: '3. Responsibility for Additional Information',
     responsibilityText:
-      'Information outside the scope of certification (such as importer name, images, or promotional texts) is the sole responsibility of the importer or buyer. Modifying or customizing the provided labels is not allowed, as it compromises regulatory compliance and may result in penalties during inspections.',
+      'Information outside the scope of certification (such as importer name, promotional images, or marketing text) is the sole responsibility of the importer or buyer. Modifying or customizing the provided labels is not allowed, as it compromises regulatory compliance and may result in penalties during inspections.',
+
     finalTitle: '4. Final Recommendations',
     finalText:
-      'Labels must be permanently affixed and must not detach before reaching the end consumer. Loose, detachable, or separately applied labels are prohibited. Reproducing, resizing, or redesigning labels is not allowed without explicit technical guidance from our team. If you have any questions, please contact us for specific instructions.',
+      'Labels must be permanently affixed and must not come off before reaching the final consumer. Loose, detachable, or separately applied labels are prohibited. Do not reproduce, resize, or redesign the labels without explicit technical approval from our team. If in doubt, please contact us for specific guidance.',
     clickToDownload: 'Click to start the download',
     enterEmail: 'Enter your name to unlock the download',
     acceptTerms: 'Accept the terms to download the labels',
@@ -104,26 +98,25 @@ export const translations = {
     termsTitle: '使用条款',
     anatTitle: '1. ANATEL 认证',
     anatText:
-      '具有射频、蓝牙或 Wi-Fi 功能的产品必须贴有 ANATEL 印章。如果尚未收到该印章，请立即与我们联系以安排发放和配送。该印章是法规要求的，不得移除、更换或更改。',
+      '具有射频、蓝牙或 Wi-Fi 功能的产品必须带有 ANATEL 印章。如果您未收到印章，请立即与我们联系，我们将为您申请并发送该印章。根据法规要求，印章不得移除、更换或更改。',
+
     inmetroTitle: '2. INMETRO 认证',
-    labelingReqs: 'a. 标签要求',
-    labelingItems: [
-      '“注意” / “警告”：高度不少于 5 毫米',
-      '警告说明文字：高度不少于 2 毫米',
-      '横向 OCP 标签：宽度不少于 50 毫米',
-      '正方形 OCP 标签：边长不少于 20 毫米',
-      '“0–3 岁”年龄标签：边长不少于 10 毫米',
+    inmetroText: [
+      "a. 标签要求：\n- '注意' / '警告'：字体高度不少于 5 毫米\n- 警告说明文字：字体高度不少于 2 毫米\n- 横向安全标签：宽度不少于 50 毫米\n- 方形安全标签：最小尺寸为 20 毫米\n- 年龄标签 '0–3 岁'：最小尺寸为 10 毫米",
+      "b. 带有发射功能或弹射物的产品（标签必须包含以下警告）：\n'请勿对准眼睛或脸部发射。不得使用制造商未提供或未推荐的弹射物。'",
+      "c. 带有长绳的产品（标签必须包含以下警告）：\n'使用该玩具需成人监督，因为其配有功能性长绳，可能对儿童构成缠绕或勒颈危险。'",
+      'd. 禁止以下产品：wateryoyo、tape ball、yoyoball、pufferball、squishyball 及任何含绳子的类似玩具（包括变体名称）。',
+      "e. 如果包装可以被儿童打开，且其中包含订书钉或金属扣件，且存在锋利边缘或尖锐部位，必须显示以下警告：\n'警告！该包装含有金属扣件/订书钉。在将玩具交给儿童之前请将其移除。'",
+      'f. 使用电池的产品：\n必须标注与电池使用相关的安全警告，并说明所使用的电池型号、类型及数量。',
     ],
-    projectileProducts: 'b. 带有发射功能的产品',
-    projectileWarning: '“请勿对准眼睛和面部。请勿使用非原厂提供或推荐的发射物。”',
-    batteryProducts: 'c. 含电池的产品',
-    batteryText: '必须包含有关电池使用的安全警告，并注明使用的电池型号、类型和数量。',
-    responsibilityTitle: '3. 补充信息的责任',
+
+    responsibilityTitle: '3. 附加信息责任',
     responsibilityText:
-      '不属于认证范围的信息（如进口商名称、图片或宣传文本）由进口商或购买者自行负责。禁止更改或自定义提供的标签，否则会影响合规性，并可能在检查中受到处罚。',
+      '不属于认证范围的信息（如进口商名称、宣传图片或广告语）由进口商或购买方全权负责。不得修改或定制所提供的标签，否则将影响合规性，并可能在监管检查中受到处罚。',
+
     finalTitle: '4. 最终建议',
     finalText:
-      '标签必须牢固粘贴，且在到达终端消费者之前不得脱落。不允许标签松动、可拆卸或独立附加。禁止在未获得我方技术团队明确指导的情况下复制、修改尺寸或重新设计标签。如有疑问，请联系我们以获得具体指导。',
+      '标签必须永久粘附，不得在到达最终消费者之前脱落。禁止使用可拆卸、易脱落或与产品分离的标签。未经我们团队明确的技术许可，不得复制、缩放或重新设计标签。如有疑问，请联系我们以获取具体指导。',
     clickToDownload: '点击开始下载',
     enterEmail: '请输入您的姓名以继续下载',
     acceptTerms: '请接受条款以下载标签',

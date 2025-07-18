@@ -266,26 +266,24 @@ export default function DownloadByCodePage() {
                     <p className="leading-relaxed">{t.anatText}</p>
                   </section>
 
-                  <section className="py-4 space-y-2">
+                  <section className="py-4 space-y-4">
                     <h3 className="text-base font-semibold divide-y border-t divide-gray-300 dark:divide-zinc-700">
                       {t.inmetroTitle}
                     </h3>
-                    {t.labelingReqs && <p className="font-medium">{t.labelingReqs}</p>}
-                    {t.labelingItems?.length && (
-                      <ul className="list-disc list-inside space-y-1">
-                        {t.labelingItems.map((item: string, i: number) => (
-                          <li key={i}>{item}</li>
-                        ))}
-                      </ul>
-                    )}
-                    {t.projectileProducts && (
-                      <p className="font-medium mt-2">{t.projectileProducts}</p>
-                    )}
-                    {t.projectileWarning && (
-                      <p className="leading-relaxed">{t.projectileWarning}</p>
-                    )}
-                    {t.batteryProducts && <p className="font-medium mt-2">{t.batteryProducts}</p>}
-                    {t.batteryText && <p className="leading-relaxed">{t.batteryText}</p>}
+
+                    <div className="whitespace-pre-line text-sm text-gray-800 dark:text-gray-200">
+                      {t.inmetroText.map((item: string, idx: number) => {
+                        const [title, ...rest] = item.split(':\n');
+                        return (
+                          <div key={idx} className="mb-6">
+                            <p className="font-semibold text-gray-900 dark:text-white">{title}</p>
+                            <p className="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300 mt-1">
+                              {rest.join(':\n')}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </section>
 
                   <section className="py-4">
@@ -356,16 +354,17 @@ export default function DownloadByCodePage() {
 
               <section>
                 <h3 className="font-semibold">{t.inmetroTitle}</h3>
-                <p className="font-medium">{t.labelingReqs}</p>
-                <ul className="list-disc list-inside space-y-1">
-                  {t.labelingItems.map((item, i) => (
-                    <li key={i}>{item}</li>
-                  ))}
-                </ul>
-                <p className="mt-2 font-medium">{t.projectileProducts}</p>
-                <p>{t.projectileWarning}</p>
-                <p className="mt-2 font-medium">{t.batteryProducts}</p>
-                <p>{t.batteryText}</p>
+                <div className="space-y-4">
+                  {t.inmetroText.map((value, index) => {
+                    const [title, ...rest] = value.split(':\n');
+                    return (
+                      <div key={index} className="whitespace-pre-line">
+                        <p className="font-medium">{title}</p>
+                        <p>{rest.join(':\n')}</p>
+                      </div>
+                    );
+                  })}
+                </div>
               </section>
 
               <section>
