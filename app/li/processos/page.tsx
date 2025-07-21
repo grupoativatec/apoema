@@ -687,7 +687,7 @@ const Page = () => {
                         imp={item.imp}
                         onConfirm={async () => {
                           try {
-                            const res = await fetch('/api/delete-orquestra', {
+                            const res = await fetch('/api/processos/delete-orquestra', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({ processoid: item.processoid }),
