@@ -249,7 +249,6 @@ const Home = () => {
             ].map((item, i) => (
               <motion.div
                 key={i}
-                variants={fadeIn}
                 initial="hidden"
                 animate="visible"
                 className="flex items-center justify-between rounded-2xl bg-white p-4 shadow-md transition hover:shadow-lg dark:border dark:border-white/20 dark:bg-zinc-900/80 dark:text-white"
@@ -274,7 +273,6 @@ const Home = () => {
 
       {/* Tabela de Licenças */}
       <motion.div
-        variants={fadeIn}
         initial="hidden"
         animate="visible"
         className="rounded-2xl bg-white p-6 shadow-lg dark:border dark:border-white/20 dark:bg-zinc-900/80 dark:text-white"

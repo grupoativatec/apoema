@@ -1,25 +1,44 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/actions/user.actions';
 import Sidebar from '../../components/Sidebar';
-import React from 'react';
-import { redirect } from 'next/navigation';
 import MobileNavigation from '@/components/MobileNavigation';
 import { Toaster } from '@/components/ui/toaster';
-import Header from '@/components/Header';
 
-const layout = async ({ children }: { children: React.ReactNode }) => {
-  const currentUser = await getCurrentUser();
+const Layout = ({ children }: { children: React.ReactNode }) => {
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
-  if (!currentUser) return redirect('/sign-in');
+  useEffect(() => {
+    const fetchUser = async () => {
+      const user = await getCurrentUser();
+      if (!user) return redirect('/sign-in');
+      setCurrentUser(user);
+      setLoading(false);
+    };
+    fetchUser();
+  }, []);
+
+  if (loading || !currentUser) return null;
 
   return (
-    <main className="h-screen bg-light-400 bg-center dark:bg-zinc-900">
+    <main className="h-screen bg-light-400 bg-center dark:bg-zinc-900 flex">
       <Sidebar
         name={currentUser.nome}
         {...currentUser}
         userId={currentUser.id}
         accountId={currentUser.nome}
+        isCollapsed={isCollapsed}
+        setIsCollapsed={setIsCollapsed}
       />
-      <section className="flex h-full flex-col md:pl-52">
+      <section
+        className={`flex flex-col transition-all duration-300 ${
+          isCollapsed ? 'ml-20' : 'ml-52'
+        } w-full`}
+      >
         <MobileNavigation fullName={''} {...currentUser} />
         <div className="main-content p-6">
           {children}
@@ -30,4 +49,4 @@ const layout = async ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export default layout;
+export default Layout;

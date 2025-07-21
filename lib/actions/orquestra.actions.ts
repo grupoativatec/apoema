@@ -265,3 +265,53 @@ export const updateOrquestraStatusAnuencia = async (imp: string, statusAnuencia:
     throw error;
   }
 };
+
+export const getRelatorioGeral = async () => {
+  try {
+    const [quantidadeTotal]: any = await pool.query('SELECT COUNT(*) AS total FROM processos');
+
+    const [topImportadores]: any = await pool.query(`
+  SELECT importador AS name, COUNT(*) AS value
+  FROM apoema.processos
+  WHERE importador IS NOT NULL AND importador != ''
+  GROUP BY importador
+  ORDER BY value DESC
+  LIMIT 5
+`);
+
+    const [topExportadores]: any = await pool.query(`
+      SELECT exportador, COUNT(*) AS total
+      FROM processos
+      GROUP BY exportador
+      ORDER BY total DESC
+      LIMIT 5
+    `);
+
+    const [topAnalistas]: any = await pool.query(`
+      SELECT analista, COUNT(*) AS total
+      FROM processos
+      WHERE analista IS NOT NULL AND analista != ''
+      GROUP BY analista
+      ORDER BY total DESC
+      LIMIT 5
+    `);
+
+    const [porData]: any = await pool.query(`
+      SELECT recebimento AS data, COUNT(*) AS total
+      FROM processos
+      GROUP BY recebimento
+      ORDER BY STR_TO_DATE(recebimento, '%d/%m/%Y') ASC
+    `);
+
+    return {
+      totalProcessos: quantidadeTotal[0].total,
+      importadores: topImportadores,
+      exportadores: topExportadores,
+      analistas: topAnalistas,
+      porData,
+    };
+  } catch (error) {
+    console.error('Erro ao gerar relatório geral:', error);
+    throw error;
+  }
+};
